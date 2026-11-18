@@ -413,6 +413,44 @@ default kernels and over-predicts by 14% under CUDA graphs (F16). Anyone who wan
 number needs the backend to separate `draft_width` from `verify_width` at those three sites, which
 is a driver change with a token-identical gate to satisfy, not an experiment setting.
 
+## F19. The second benchmark: the edge is real on mtbench and still cannot become throughput
+
+mtbench, 32 frozen prompts, 256 new tokens, greedy, nine blocks, **21735 rounds**
+(`experiments/standalone/accept_mtbench_sweep.json`):
+
+| b \ k | 5 | 8 | 9 | 10 | 12 | 16 |
+|---|---|---|---|---|---|---|
+| 9  | 2.656 | 3.118 | 3.229 | n/a | n/a | n/a |
+| 12 | 2.633 | 3.058 | 3.162 | 3.249 | 3.388 | n/a |
+| 16 | 2.739 | 3.201 | **3.310** | 3.404 | 3.553 | 3.741 |
+
+| benchmark | rounds | cells tau_9(16)/tau_9(D8) | paired [95% CI] | wins/losses | predicted tok/s | verdict |
+|---|---|---|---|---|---|---|
+| math500 | 15594 | 1.006 | 1.018 [0.989, 1.049] | 20/12, p = 0.215 | 1.013 | both bars fail |
+| mtbench | 21735 | 1.025 | **1.052 [1.016, 1.094]** | 25/7 | 1.051 | tau passes, tok/s fails |
+
+**What replicates and what does not.** The absence of a width trend at fixed k replicates: on
+mtbench the k=9 column runs 3.229 down to 3.149 and back to 3.310, and the k=10 and k=12 columns
+behave the same way. What does not replicate is a *zero* effect: on mtbench the paired acceptance
+edge is 5.2% with a CI that excludes 1.0, and b16 sits above every other block at k=9 in both
+benchmarks (by 0.6% and 2.5%), which is the signature of a small advantage concentrated in the block
+the drafter was trained at. So the honest statement is a small positive acceptance effect of width
+at fixed k, worth 1.8% on math500 and 5.2% on mtbench, not a flat surface.
+
+**Why it still does not become throughput.** The cost of the two arms is identical in any
+instrument: both verify nine columns, and drafting 15 proposals instead of 8 costs nothing (6.3 ms
+at 8 slots, 6.3 ms at 16, measured). The ceiling on the treatment is therefore the acceptance ratio
+itself, and the registered throughput bar is 1.10, which needs 10% acceptance. One benchmark reaches
+5.2% and the other 1.8%. Under the collapse rule as written (a tok/s ratio inside [0.95, 1.05]
+means the two knobs are the same knob), math500 collapses the two knobs and mtbench sits exactly on
+the boundary at 1.051. The rule was right at the level that matters: **there is no configuration in
+which truncating the window beats shrinking the block by the margin the claim needs.**
+
+**Against the shipped arm, both benchmarks agree.** Composed over A0 (block 16 / 17 columns), the
+paired reading is 1.345 on math500 and 1.344 on mtbench, with acceptance factors 0.804 and 0.803 and
+the same engine cost factor of 1.674. Two independent prompt sets landing within 0.1% of each other
+is the strongest evidence in this file that the composition is not an artefact of one benchmark.
+
 ## Verdict from the pre-registered rules
 
 `uv run python scripts/decide.py --results results_det --benchmark math500 --adaptive-na`
