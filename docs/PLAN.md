@@ -54,7 +54,7 @@ Grid: A0, A1, A3 across `c ∈ {1,4,8,16,32}` × two benchmarks (MATH-500 high-�
 
 Metrics per run: `E[τ]` (accepted tokens incl. bonus), `L` submitted (mean, histogram), end-to-end tok/s, `ms/round` p50 and p95, graph re-captures, and the verification cost share from a one-off nsys trace per arm.
 
-Protocol rules: greedy outputs must match the AR baseline token-for-token on ≥99% of prompts (losslessness check); no table row may report tok/s without `E[τ]` and `ms/round`; three seeds on the four headline cells; prompts fixed and committed before any GPU run.
+Protocol rules: greedy outputs must match the AR baseline token-for-token on ≥99% of prompts (losslessness check); no table row may report tok/s without `E[τ]` and `ms/round`; three seeds on the four headline cells; prompts fixed and committed before any GPU run. Every run writes `results/<arm>_<bench>_c<c>_s<seed>.json` in the schema at `docs/EXPERIMENTS.md` §4, and the verdict is produced by `uv run python scripts/decide.py --results results --benchmark math500`, never typed by hand from a table.
 
 ## 5. GPU budget
 
@@ -73,6 +73,8 @@ Cost estimate: A100 40 GB at $1.29–1.89/h → **$13–19**; A100 80 GB at $1.4
 Everything else (cost model, analysis, figures, writing) runs on the laptop and costs nothing.
 
 ## 6. Projected gains
+
+**Decision rule (binding).** The numbers in this section are **hypotheses under test**, not evidence. The project's verdict is produced by `scripts/decide.py` from measured `results/*.json` against thresholds pre-registered in `docs/EXPERIMENTS.md`, and no threshold may move after a run. A missing cell yields INCOMPLETE, never a result. Nothing here, and nobody's intuition about what is "too high", decides whether the method works; the measurements do.
 
 From `analysis/cost_model.py`, anchored on the paper's two measured points (v(1)=1.471, v(32)=2.761 AR-step equivalents). Two parameters are not identified by the paper:
 

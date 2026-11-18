@@ -14,9 +14,10 @@ The improvement is therefore a **verify-length controller**: draft the full bloc
 
 ## Status
 
-- Cost model: **done**, `analysis/cost_model.py`, with tests. All projections below are model output.
+- Cost model: **done**, `analysis/cost_model.py`, with tests. Its numbers are hypotheses, not evidence.
+- Decision protocol: **done**, `docs/EXPERIMENTS.md` plus `scripts/decide.py`, which turns measured `results/*.json` into a verdict against pre-registered thresholds.
 - GPU experiments: **not started.** The local GPU is a 4 GB RTX 3050 and cannot host the 8B target.
-- Projected gains are **upper bounds**, calibrated against the one published measurement of this mechanism (LibraSpec: +15.6% over DFlash on Qwen3-8B at concurrency 1).
+- Projected gains are **upper bounds**, calibrated against the one published measurement of this mechanism (LibraSpec: +15.6% over DFlash on Qwen3-8B at concurrency 1). They exist to justify paying for the experiment, not to predict its outcome.
 
 ## Projected results
 
@@ -35,9 +36,11 @@ The single measurement that decides everything is ρ. If verification turns out 
 
 ```
 analysis/cost_model.py     cost model, anchors, projection tables (has --selftest)
-tests/test_cost_model.py   anchors, algebra, and the central dominance claim
+scripts/decide.py          applies the pre-registered rules to measured results
+tests/                     cost-model algebra + the decision rules themselves
 docs/PLAN.md               full plan: experiments, GPU budget, projections, roles
-results/                   measurement JSON, one file per (arm, concurrency, benchmark)
+docs/EXPERIMENTS.md        hypothesis register H1-H7, thresholds, decision matrix
+results/                   measurement JSON, one file per (arm, concurrency, benchmark, seed)
 figures/                   the frontier figure for the report and the talk
 ```
 
