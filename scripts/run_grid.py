@@ -7,7 +7,7 @@ per-round metadata and is exercised by its own tests.
 
 Usage:
     uv run python scripts/run_grid.py --dry-run
-    uv run python scripts/run_grid.py --backend sglang --drafter z-lab/Qwen3-8B-DFlash \\
+    uv run python scripts/run_grid.py --backend sglang --drafter z-lab/Qwen3-8B-DFlash-b16 \\
         --arms A0,A1,A3,A5 --benchmarks math500 --concurrency 1,4,8,16,32
 
 A4 (per-round verify-length selection) is refused until E0 confirms the backend exposes a
