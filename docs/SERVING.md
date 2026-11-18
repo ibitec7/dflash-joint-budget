@@ -76,3 +76,35 @@ curl -s localhost:30000/generate -H 'content-type: application/json' -d '{"text"
 | transformers, `--backend transformers` | **no, c=1 only** | only if `spec_generate` exposes it | every c>1 cell (H1/H3/H4 at c=32), batched ms/round, throughput above batch 1; A4 untestable |
 
 Order is fixed: sglang -> vllm -> transformers, and each drop is reported, not hidden. vllm keeps the grid minus per-round adaptivity; transformers keeps only the c=1 anchors (A0's 5.1x, A5). R4 firing: the report ships C1-C3 plus a c=1 column, grid NOT MEASURED. Never mix backends in one table.
+
+## 5. DFlash install on a Brev A100
+`scripts/box_bootstrap.sh` does §1 for you, idempotently, as whatever user the instance gave you
+(`ubuntu`, `shadeform`, …) — it reads `whoami`/`$HOME`, refuses to run as root, and builds a 3.12
+venv because the 22.04 image's `python3` is 3.10 and `from enum import StrEnum` fails at import.
+```bash
+ssh <instance>                                  # then, in a NON-login shell:
+git clone <repo> ~/dflash-joint-budget && cd ~/dflash-joint-budget
+bash scripts/box_bootstrap.sh                   # prints only MARK-STEP / MARK-DONE lines
+bash scripts/box_bootstrap.sh --dry-run         # same markers, mutates nothing
+source ~/dflash_env.sh                          # REPO, PY, PYTHONPATH, HF_HOME, CUDA_HOME
+```
+Read it as markers, not logs: `MARK-STEP <name> ok|FAIL <detail>` and a final `MARK-DONE rc=<n>`;
+rc 0 means every step passed, 2 means it refused to run. Command output is in
+`~/dflash_bootstrap.log`. The torch wheel comes from the `nvcc --version` on the box
+(12.6 -> `https://download.pytorch.org/whl/cu126`; `/whl/cu12` is not a valid index, it 404s), and
+`CUDA_HOME`/`PATH` are exported in the script *and* in `dflash_env.sh`, because non-login remote
+shells never source `/etc/profile.d`. The script never downloads weights and never installs
+sglang: it prints the exact `uv pip install --python "$PY" 'sglang[all]'` line, and runs it only
+with `--with-sglang`, since that wheel pins its own torch/CUDA and is a separate decision.
+
+Then pull the weights deliberately and run E0 before any grid cell:
+```bash
+$PY -m huggingface_hub.cli download Qwen/Qwen3-8B z-lab/Qwen3-8B-DFlash-b16   # Qwen3-8B is gated
+$PY scripts/e0_probe.py --backend sglang --json-out results/e0.json
+```
+E0 answers three questions with evidence and prints `E0-Q1:`/`E0-Q2:`/`E0-Q3:` lines: does the
+drafter serve tokens at all, is the verify length per-request or only per-process (it introspects
+`SamplingParams`/`Engine.generate` and greps the installed package, never guesses a field name),
+and what ms(17 cols)/ms(9 cols) costs at batch 32. `E0-Q3: NOT MEASURABLE` means A4 is dead on
+this backend — see §3. Verify the plumbing on the laptop first with
+`uv run python scripts/e0_probe.py --dry-run`; every dry-run line is labelled `dry-run`.
