@@ -59,41 +59,8 @@ def frozen_contexts(tok, target, prompts: list[str], ar_len: int, mode: str) -> 
     return out
 
 
-def target_hidden(target, ids: torch.Tensor, layer_ids: list[int], cache=None):
-    """Concatenated target hidden states at the drafter's read-out layers, last position."""
-    o = target(ids, past_key_values=cache, use_cache=cache is not None, output_hidden_states=True,
-               logits_to_keep=1)
-    th = torch.cat([o.hidden_states[i + 1] for i in layer_ids], dim=-1)
-    return th, o
-
-
-def draft_block(draft, embed, anchor: int, block: int, mask_id: int, th, ctx_len: int):
-    """One parallel draft pass: anchor token plus (block-1) mask tokens, bidirectional.
-
-    position_ids must span the whole cache row range (ctx_len + block), not just the block:
-    the rotary table is indexed by the cached K rows and length is enforced by broadcast only,
-    so a block-length slice either raises or - worse - runs silently wrong.
-    """
-    blk = torch.full((1, block), mask_id, dtype=torch.long, device=th.device)
-    blk[0, 0] = anchor
-    with torch.no_grad():
-        h = draft(target_hidden=th, noise_embedding=embed(blk),
-                  position_ids=torch.arange(ctx_len + block, device=th.device).unsqueeze(0),
-                  past_key_values=DynamicCache(), use_cache=True, is_causal=False)
-    return blk, h
-
-
-def verify(target, props: torch.Tensor, ctx_cache, ctx_len: int, lm=None):
-    """Target forward over the proposals only; agreement of draft i is checked at column i-1."""
-    with torch.no_grad():
-        o = target(props, position_ids=torch.arange(ctx_len, ctx_len + props.shape[1],
-                                                    device=props.device).unsqueeze(0),
-                   past_key_values=ctx_cache, use_cache=False)
-    post = torch.argmax(o.logits, dim=-1)
-    return post
-
-
-def reference_loop(draft, target, embed, lid, mask, blk: int, ids: torch.Tensor, max_new: int):
+def reference_loop(draft, target, embed, lid, mask, blk: int, ids: torch.Tensor, max_new: int,
+                   timings: list | None = None):
     """Greedy speculative loop, written to mirror the checkpoint's own spec_generate.
 
     Returns the committed token ids after the prefix and the per-round committed counts. This
@@ -112,19 +79,25 @@ def reference_loop(draft, target, embed, lid, mask, blk: int, ids: torch.Tensor,
     start, rounds, end = ctx, [], ctx + max_new
     while start < end:
         block = out[:, start:start + blk].clone()
+        torch.cuda.synchronize(); t0 = time.perf_counter()
         h = draft(target_hidden=th, noise_embedding=embed(block),
                   position_ids=pos[:, pkv_d.get_seq_length(): start + blk],
                   past_key_values=pkv_d, use_cache=True, is_causal=False)
         prop = torch.argmax(target.lm_head(h[:, -blk + 1:, :]), dim=-1)
+        torch.cuda.synchronize(); t_draft = time.perf_counter() - t0
         pkv_d.crop(start)
         block[:, 1:] = prop
+        torch.cuda.synchronize(); t0 = time.perf_counter()
         vo = target(block, position_ids=pos[:, start:start + blk], past_key_values=pkv_t,
                     use_cache=True, output_hidden_states=True)
+        torch.cuda.synchronize(); t_verify = time.perf_counter() - t0
         post = torch.argmax(vo.logits, dim=-1)
         acc = int((block[:, 1:] == post[:, :-1]).flatten().cumprod(0).sum())
         out[:, start:start + acc + 1] = block[:, :acc + 1]
         out[:, start + acc + 1] = post[0, acc]
         rounds.append(acc + 1)
+        if timings is not None:
+            timings.append({"draft_s": t_draft, "verify_s": t_verify, "columns": blk})
         start += acc + 1
         pkv_t.crop(start)
         th = torch.cat([vo.hidden_states[i + 1] for i in lid], dim=-1)[:, :acc + 1, :]
@@ -213,34 +186,22 @@ def main() -> None:
 
     blocks = [int(b) for b in a.blocks.split(",")]
     rows, timings = [], []
+    # One pass per block through the SAME loop the gate validates. An earlier version measured with
+    # a separate draft/verify pair and reported tau 1.00 on every prompt while this loop accepted
+    # 3.7 tokens per round on the same weights: two implementations, one of them wrong. A round
+    # commits min(committed, k) tokens for any window k, so one pass prices every verify length.
     for pi, ids in enumerate(ctxs):
         full = torch.tensor([ids], device="cuda")
         ctx_len = full.shape[1]
-        cache = DynamicCache()
-        th, o = target_hidden(target, full[:, :-1], lid, cache)
-        anchor = int(torch.argmax(o.logits[0, -1]))
-
         for b in blocks:
-            torch.cuda.synchronize(); t0 = time.perf_counter()
-            _blk, h = draft_block(draft, embed, anchor, b, mask, th, ctx_len - 1)
-            torch.cuda.synchronize(); t_draft = time.perf_counter() - t0
+            t_rounds = []
             with torch.no_grad():
-                props = torch.argmax(target.lm_head(h[:, 1:, :]), dim=-1)  # b-1 proposals
-            torch.cuda.synchronize(); t0 = time.perf_counter()
-            post = verify(target, props, cache, ctx_len - 1)
-            torch.cuda.synchronize(); t_verify = time.perf_counter() - t0
-            agree = (props[0] == post[0]).tolist()
-            matched = 0
-            for okv in agree:
-                if not okv:
-                    break
-                matched += 1
-            # committed tokens per round, the same quantity the engine reports as
-            # spec_accept_length: matched drafts plus the target's own correction token.
-            rows.append({"prompt": pi, "ctx_len": ctx_len, "block": b,
-                         "accepted": matched + 1, "drafts_matched": matched, "agree": agree})
-            timings.append({"prompt": pi, "block": b, "draft_s": t_draft, "verify_s": t_verify,
-                            "columns": b})
+                _seq, rounds = reference_loop(draft, target, embed, lid, mask, b, full, a.max_new,
+                                              timings=t_rounds)
+            for r, t in zip(rounds, t_rounds):
+                rows.append({"prompt": pi, "ctx_len": ctx_len, "block": b,
+                             "accepted": r, "drafts_matched": r - 1})
+                timings.append({"prompt": pi, "block": b, **t})
         if pi % 8 == 7:
             print(f"  prompt {pi + 1}/{len(ctxs)} done")
 
