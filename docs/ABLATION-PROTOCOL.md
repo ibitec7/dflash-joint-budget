@@ -20,13 +20,13 @@ not merely from the pages read. This file specifies what to run; it reports no r
 | T10 (p.12) | drafter with no target features, 5-L | MATH-500 T=0 | 4.61 | 3.73× | single stream | H200 | NOT STATED |
 | T13 (p.13) | anchor sampling standard vs random, 3-L, block 16 | MATH-500 | 4.94 / 5.64 | 4.13× / 4.69× | single stream | H200 | NOT STATED |
 | Fig. 3 (p.3) | **draft latency only** vs #draft tokens {4,8,16}, 1/3/5-L + EAGLE-3 1-L | — | not measured | not measured | single stream | NOT STATED | — |
-| T11 (p.12) | model scale, SGLang | c=8 only | 3.7–9.1 | 1.2×–3.9× | 8 | 1× B200 | NOT STATED |
+| T11 (p.12) | model scale, SGLang | c=8 only | 6.0–9.1 | 1.2×–3.9× | 8 | 1× B200 | NOT STATED |
 | T12 (p.12) | vLLM, Qwen3.5-9B | 849→9836 tok/s | not reported | 4.0× → 1.9× (c=32) | 1/8/16/32 | NOT STATED | NOT STATED |
 | p.7 §5.5 preamble | scope of every ablation | "single H200 GPU with greedy decoding, except those evaluated on SGLang" | — | — | **none above c=1** | H200 | — |
 | p.9 §5.5.4 | position, not an experiment | "large blocks can increase verification cost under compute-bound settings (e.g., large batch sizes); reducing the block size … can therefore yield better overall speedup. We leave adaptive block-size scheduling to future work." | — | — | — | — | — |
 
 The last two rows are the whole opening: they name our mechanism, prescribe the *wider* knob for it,
-and measure neither at batch. T8 is their only block-width evidence, and it is batch-1.
+and measure neither at batch. T8 is their only block-width evidence and it is batch-1.
 
 ## 1b. Novelty anchor (verbatim, arXiv 2602.06036v2 §5.5.4 "Training-Inference Time Block Size")
 
@@ -56,8 +56,8 @@ authors identified", and the ablation below must show it dominates the remedy th
 | Does the b8 arm pay an acceptance ceiling? | Yes: 35.7% of b8 blocks fully accepted on MATH-500, i.e. the arm saturates and τ is capped at 9 however easy the context. | p.9 |
 | Is drafting cost claimed flat in γ? | Yes: "For moderate block sizes, Tdraft is therefore largely insensitive to γ", with Fig. 3 (4/8/16 tokens). That is the licence for drafting wide and verifying narrow — asserted at batch 1, so re-measure it. | p.3 §3.2 |
 
-**Coverage:** the VLC cell does not exist in DFlash. What exists is (16,17) and (8,9), the diagonal of
-the grid. The identifying cell is off it: **(16 draft, 9 columns)** vs **(8 draft, 9 columns)**.
+**Coverage:** the VLC cell does not exist in DFlash. What exists is (16,17) and (8,9) — the diagonal
+of the grid. The identifying cell is off it: **(16 draft, 9 columns)** against **(8 draft, 9 columns)**.
 
 ## 3. The minimum design a reviewer would demand
 
@@ -66,10 +66,10 @@ the grid. The identifying cell is off it: **(16 draft, 9 columns)** vs **(8 draf
 Columns ≤ drafts + 1 (p.3 Eq. 1), so (8 draft, 17 columns) is structurally absent; producing it needs
 a second draft pass, which is a *different algorithm* and must be labelled as one.
 
-| Cell = (draft γ, verify columns) | γ | columns | in paper? | role |
+| Cell | draft γ | verify columns | in paper? | role |
 |---|---|---|---|---|
 | A0 | 16 | 17 | yes (T1, T3, T8 b16→b16) | published baseline |
-| **VLC** | 16 | **9** | **no** | **treatment: narrow window, wide draft** |
+| **VLC(16,8)** | 16 | **9** | **no** | **treatment: narrow window, wide draft** |
 | **D8** | 8 | **9** | yes (T8 b16→b8, batch 1 only) | **control: narrow block** |
 | D8-small | 8 | 5 | no | shows the control isn't a column artefact |
 | AR | — | — | yes | anchor for the lossless check |
@@ -81,9 +81,10 @@ a second draft pass, which is a *different algorithm* and must be labelled as on
 | verify columns k | {5, 9, 13, 17} at b=16; {5, 9} at b=8 | 9 is the matched cell, 17 the published one, 5 and 13 give the slope of τ(k) and ms_round(k) — the mechanism claim |
 | draft width b | {8, 16}, **same b16 checkpoint run at BS 8** | T8 (p.8) shows b16→b8 generalizes and b8→b16 does not; a separately trained b8 checkpoint would confound width with capacity |
 | concurrency c | {1, 8, 16, 32} | matches T3/T5/T12 so the batch regime is comparable; our crossover sits between 8 and 16 (RESULTS F3) |
-| prompts / seeds | frozen MATH-500, 64 at c=32, 32 elsewhere; 3 seeds on A0, VLC, D8, AR at c=32 | EXPERIMENTS §4 rule 4, not to be silently dropped |
+| prompts / seeds | frozen MATH-500, 64 at c=32, 32 elsewhere; 3 seeds on A0, VLC(16,8), D8, AR at c=32 | EXPERIMENTS §4 rule 4, not to be silently dropped |
 
-Six spec cells — (16,5) (16,9) (16,13) (16,17) (8,5) (8,9) — × 4 concurrencies = 24 runs, + AR + 8 repeats at c=32.
+Six arms × four concurrencies = 24 runs + 8 repeat seeds at c=32. Fewer leaves the headline at one
+seed and one concurrency — the shape of claim T8 itself makes.
 
 ### 3.3 Error bars at this scale
 
@@ -102,15 +103,15 @@ noise, not statistics. Rule: quality numbers only in deterministic mode, speed n
 
 | # | Construction | Definition | What it licenses |
 |---|---|---|---|
-| i | **Equal verify columns** (mandatory) | C_verify(VLC) = C_verify(D8) = 9; same query positions, same τ ceiling; only drafter latency differs, and that is measured | "at equal verification work the wide draft accepts more" — kills relabelling outright |
+| i | **Equal verify columns** (mandatory) | C_verify(VLC(16,8)) = C_verify(D8) = 9; same query positions, same τ ceiling; only drafter latency differs, and that is measured | "at equal verification work the wide draft accepts more" — kills relabelling outright |
 | ii | Equal round time | measure ms_round both arms; if the wider draft costs more, compare at the columns where ms_round matches and report the mismatch | "at equal wall-clock per round" — the strict form |
 | iii | Equal cost per accepted token (mandatory) | frontier of τ vs tok/s over every cell in §3.2, both families | "better", not merely "different": VLC's frontier must lie above D8's at c=32 |
 
 Report the identity per cell (p.3 Eq. 1): η = τ / (T_draft + T_verify), with `T_draft(b)` and
 `T_verify(k)` measured separately — one nsys trace per arm at c=32 (EXPERIMENTS §4 rule 6). The claim
 is that the two terms answer to *different* knobs; end-to-end tok/s alone is correlational and a
-reviewer will say so. Decision rule (EXPERIMENTS §2b, in (γ, columns)): pass if `tok/s(16,9) ≥ 1.10 ×
-tok/s(8,9)` at c=32 with `τ(16,9) ≥ 1.05 × τ(8,9)`; fail → report the break-even width.
+reviewer will say so. Decision rule unchanged (EXPERIMENTS §2b): pass if `tok/s(VLC(16,8)) ≥ 1.10 ×
+tok/s(D8)` at c=32 with `τ_9(16) ≥ 1.05 × τ_9(9)`; fail → report the break-even width.
 
 ## 4. What would make the claim fatally confounded
 
@@ -119,7 +120,7 @@ tok/s(8,9)` at c=32 with `τ(16,9) ≥ 1.05 × τ(8,9)`; fail → report the bre
 | T1 | **Backend coupling**: the "VLC" arm set via `speculative_num_draft_tokens=9`, which also sets the drafter block to 9 | the cell becomes (9,9) vs (8,9): one column apart, no wide draft. Exactly what produced 0.990 (RESULTS F5) | assert at runtime that drafter attention spans 16 positions and target logits span 9; log both counters |
 | T2 | **Unequal target passes per accepted token** | a narrow arm needing more rounds pays more target passes; tok/s hides it | report counted target forwards per generated token, per arm |
 | T3 | **Cross-machine comparison**: our c=32 VLC against T8's batch-1 H200 row (3.87×/5.09) | different GPU, batch, prompts, kernel mode — and load regime, the variable under test | all ratios internal to our grid; T8 an anchor, never a denominator |
-| T4 | **Mismatched τ ceilings**: VLC caps at 9 | won trivially by whichever arm has the higher cap | ceilings equal by construction, printed per arm |
+| T4 | **Mismatched τ ceilings**: VLC(16,8) caps at 9 | won trivially by whichever arm has the higher cap | ceilings equal by construction, printed per arm |
 | T5 | **Different effective batch**: a 9-column arm admits more in-flight requests, so the win is admission | gain vanishes at equal occupancy | hold `max_running_requests` and in-flight batch fixed (SGLang clamps to 48, RESULTS §Configuration) |
 | T6 | **Mixed kernel modes** across arms | the win moves +36% → +23% between modes (RESULTS F8); mixing can flip a 10% threshold | one mode per table, named in the caption |
 | T7 | **Different accepted-prefix inputs**: each arm continuing its own prompt | τ differences become input differences | AR-generated prefixes frozen and shared byte-for-byte (EXPERIMENTS §2b) |
@@ -131,6 +132,6 @@ tok/s(8,9)` at c=32 with `τ(16,9) ≥ 1.05 × τ(8,9)`; fail → report the bre
 
 Novelty. AdaFlash already truncates the submitted prefix at C∈{1,32,64,128} with a trained head, and
 LibraSpec has the training-free selection rule (RELATED.md). What remains is one controlled cell no
-paper reports: **VLC (16,9) vs D8 (8,9) at c=32 — same columns, same ceiling, same batch**. If it does not
+paper reports: **(16,9) vs (8,9) at c=32 — same columns, same ceiling, same batch**. If it does not
 clear 1.10×, the honest result is that on a bidirectional-block drafter the two knobs are near-
 substitutes, and the report says so, as EXPERIMENTS §2b already commits it to.
