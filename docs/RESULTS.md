@@ -325,9 +325,16 @@ at a measured tau of 5.00 with bit-identical outputs". What does not survive:
 **Label correction (2026-11-19).** Earlier revisions of this section called A1 "draft 16, verify 9".
 It was not: `speculative_num_draft_tokens=9` sets the drafter's block to 9 as well
 (`dflash_worker_v2.py:511-523` calls `set_block_size(9)`), and the same applies to A3 at 8. Every
-A1/A3 number in this file is block-k/verify-k, k equal. The "draft wide, verify narrow" cell has
-never been run; it is registered as H4-VLC in `docs/EXPERIMENTS.md` and needs the standalone
-instrument, because no public flag can express it.
+A1/A3 number in this file is block-k/verify-k, k equal. The "draft wide, verify narrow" cell could
+not be run on the engine at all; it was built as the standalone instrument and has now been measured
+(F15).
+
+**H4-VLC, run 2026-11-18 on the standalone instrument: FAIL.**
+`tau_9(16)/tau_9(9) = 1.018, 95% CI [0.989, 1.049]` against a 1.05 bar, predicted tok/s ratio 1.023
+against 1.10, per-prompt 20 wins to 12 losses (sign test p = 0.215), 32 prompts, 7079 rounds,
+math500. The verdict is unchanged from MECHANISM ONLY, and it now has the one cell that would have
+promoted it, measured, and the cell does not promote it. The contribution is the critique plus a
+negative result, not a better knob (F15).
 
 
 ## Correction (2026-11-19): the arms were not the configurations their labels claim
