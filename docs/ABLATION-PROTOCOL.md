@@ -28,6 +28,23 @@ not merely from the pages read. This file specifies what to run; it reports no r
 The last two rows are the whole opening: they name our mechanism, prescribe the *wider* knob for it,
 and measure neither at batch. T8 is their only block-width evidence, and it is batch-1.
 
+## 1b. Novelty anchor (verbatim, arXiv 2602.06036v2 §5.5.4 "Training-Inference Time Block Size")
+
+> "DFlash models trained with larger block sizes generalize well to smaller inference-time block
+> sizes. This property enables dynamic block-size scheduling during inference to improve end-to-end
+> efficiency. In practical serving scenarios, large blocks can increase verification cost under
+> compute-bound settings (*e.g*., large batch sizes); reducing the block size in such cases can
+> therefore yield better overall speedup. We leave adaptive block-size scheduling to future work."
+
+Read precisely, this does three things for us:
+
+1. It **names our problem** (verification cost under serving batch), so the phenomenon is not ours to claim.
+2. It **nominates block-size reduction as the remedy**, which is exactly the A1/A3 regime we already measured. Any VLC claim must beat that nominated fix, not just beat DFlash-at-block-16.
+3. It **does not consider verify-window truncation at all** (full-text: `truncat` 0 hits, `prefix` 0, `window` 0, `partial` 0), and leaves the scheduling question open. That is the gap our cell fills; it is a gap in the remedy space, not in the problem statement.
+
+Consequence for the report: the honest title of our contribution is "a second remedy for a cost the
+authors identified", and the ablation below must show it dominates the remedy they nominated.
+
 ## 2. Does the paper separate draft width from verify length? No — one symbol
 
 | Question | Answer | Anchor |
