@@ -236,13 +236,25 @@ class _SGLangBackend:
         outs = self._engine.generate(prompts, sampling_params=params)
         texts, metas = [], []
         for out in outs:
-            meta = dict(getattr(out, "meta_info", {}) or {})
-            texts.append(getattr(out, "text", "") or "")
+            # sglang's offline Engine returns plain dicts (text/output_ids/meta_info);
+            # some builds return objects. Handle both rather than losing the text.
+            if isinstance(out, dict):
+                text = out.get("text") or ""
+                meta = dict(out.get("meta_info") or {})
+            else:
+                text = getattr(out, "text", "") or ""
+                meta = dict(getattr(out, "meta_info", {}) or {})
+            rounds = meta.get("spec_verify_ct")
+            accepted = meta.get("spec_accepted_tokens")
+            if accepted is None and rounds and meta.get("spec_accept_length") is not None:
+                # spec_accept_length is emitted tokens per round, bonus column included.
+                accepted = float(meta["spec_accept_length"]) * float(rounds)
+            texts.append(text)
             metas.append(
                 {
                     "completion_tokens": meta.get("completion_tokens"),
-                    "rounds": meta.get("spec_verify_ct"),
-                    "accepted": meta.get("spec_accepted_tokens"),
+                    "rounds": rounds,
+                    "accepted": accepted,
                     "latency_s": meta.get("e2e_latency"),
                     "raw": meta,
                 }
