@@ -123,6 +123,34 @@ the block-width effect the paper reports (6.33 -> 5.09, a 20% drop) is visible i
 
 Caveat that survives: neither cell is a verify-window test. Both ran block == submitted.
 
+## F11. Kernel mode moves absolute throughput 2.5x; the paired ratio barely moves
+
+Same box, same prompts, math500, 32 prompts, c=32, two kernel modes:
+
+| arm | det tok/s | det x AR | default tok/s (seed 1) | default x AR | ratio stability |
+|---|---|---|---|---|---|
+| A5 (AR) | 993.6 | 1.00 | 2460.8 | 1.00 | abs 2.48x, by design |
+| A0 (draft 16 / 17 col) | 1674.3 | 1.685 | 2234.5 | 0.908 | sign flips |
+| A1 (draft 8 / 9 col) | 2206.7 | 2.221 | 3149.0 | 1.284 | 1.318 det vs 1.409 default |
+
+Two things this pins down, and one it forbids:
+
+1. **Repeatability.** A5 at c=32 measured in two adjacent passes is 2460.8 vs 2461.1 tok/s, a
+   **0.013%** gap. Adjacent-run noise on an identical configuration is negligible next to the
+   1.10x decision bar, so a 1.3x paired ratio is not a noise artefact.
+2. **Ratios are the reportable quantity.** Absolute tok/s depends on kernel mode by 2.5x, and
+   A0's position against AR even changes side of parity (1.685x det, 0.908x default). Quoting an
+   absolute number without the mode is meaningless; the paired ratio moves far less (1.318 vs
+   1.409, 7% apart) because both arms pay the same kernel tax.
+3. **Forbidden:** comparing a deterministic-mode arm against a default-mode arm. Every arm in one
+   table must come from one mode, and the mode must be in the caption. Two numerics regimes also
+   give different tau for the same config (A0 5.861 det vs 5.510 default; A1 5.001 vs 4.850),
+   because batch-invariant kernels change argmax ties - so tau is not portable across modes either.
+
+Consequence for the VLC cell: report `tau_9(16)/tau_9(8)` and the predicted tok/s ratio from the
+in-process cost model as the primary quantities, and use engine tok/s only as corroboration of the
+model on the expressible arm.
+
 ## Verdict from the pre-registered rules
 
 `uv run python scripts/decide.py --results results_det --benchmark math500 --adaptive-na`
