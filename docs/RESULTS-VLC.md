@@ -44,7 +44,7 @@ tokens, A100 80GB PCIe, SGLang 0.5.23, default kernels, seed 0. The three method
 | math500 | D8 | 8 / 9 | 4.856 | 29.35 | 3370.4 | 1.38x | 1.50x | measured |
 | math500 | AR | 1 / 1 | 1.000 | 0.41 | 2451.1 | 1.00x | 1.09x | measured |
 | mtbench | DFlash | 16 / 17 | 4.079 | 49.37 | 1539.6 | 0.63x | 1.00x | measured |
-| mtbench | VLC | 16 / 9 | 3.310 (tau_9) | 29.37 | 1.345-1.398x DFlash | - | - | **composed** |
+| mtbench | VLC | 16 / 9 | 3.310 (tau_9) | 29.37 | 1.344-1.481x DFlash | - | - | **composed** |
 | mtbench | D8 | 8 / 9 | 3.703 | 29.37 | 2247.8 | 0.92x | 1.46x | measured |
 | mtbench | AR | 1 / 1 | 1.000 | 0.41 | 2452.2 | 1.00x | 1.59x | measured |
 
