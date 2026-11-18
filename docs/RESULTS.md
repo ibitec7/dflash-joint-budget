@@ -197,11 +197,11 @@ math500, 32 prompts, 256 new tokens, default kernels, one box, one pass per cell
   while the narrow block reaches 1.37x. A reader told only the headline (2.8x at c=32) would
   conclude the opposite of what this box does.
 - **The c=32 gap decomposes exactly, with no cost model:** tau ratio
-  5.516/4.901 = 1.125, tok/s ratio 2245.1/3363.7
-  = 0.667, so the implied round-cost ratio cost(b16)/cost(b8) = 0.593/1.125 =
-  **0.527**. Verifying 17 columns instead of 9 costs 1.7x per round on an A100 at
-  c=32, which is the entire reason the wide block loses there.
-- **That 1.70 is the quantity VLC attacks.** Keeping the wide block's proposals (higher tau) while
+  5.516/4.901 = 1.125, tok/s ratio 2245.1/3363.7 = 0.667. Round time is tau / tok_per_s, so the
+  implied round-cost ratio cost(b16)/cost(b8) = tau_ratio / tok_ratio = 1.125/0.667 = **1.686**.
+  Verifying 17 columns instead of 9 costs 1.69x per round on an A100 at c=32, which is the entire
+  reason the wide block loses there.
+- **That 1.69 is the quantity VLC attacks.** Keeping the wide block's proposals (higher tau) while
   verifying only 9 columns removes the cost the wide block pays but not the acceptance it earns.
   The bar is stated in advance: tau_9(16) >= 1.05 x tau_9(8) and tok/s >= 1.10 x the narrow arm.
 
