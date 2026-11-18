@@ -85,6 +85,55 @@ reports 8.01 on MATH-500 with block 16 on a B200. Prompt subset, output length
 (256 vs the paper's setting) and GPU all differ, so this is a configuration gap, not a
 contradiction, and no cross-paper comparison of absolute tau should be made from it.
 
+## Deterministic-kernel sweep (quality-valid, batch-invariant kernels)
+
+| c | AR tok/s | A0 tok/s | A1 tok/s | A0/AR | A1/AR | A1/A0 |
+|---|---|---|---|---|---|---|
+| 1 | 29.3 | 119.7 | 95.5 | 4.09x | 3.26x | 0.80 |
+| 4 | 115.5 | 426.8 | 334.1 | 3.70x | 2.89x | 0.78 |
+| 8 | 228.7 | 899.2 | 715.5 | 3.93x | 3.13x | 0.80 |
+| 16 | 477.0 | 1438.3 | 1534.6 | 3.02x | 3.22x | 1.07 |
+| 32 | 993.6 | 1674.3 | 2206.7 | 1.68x | 2.22x | **1.32** |
+
+Every cell matches AR on 32/32 prompts. tau is constant across concurrency in this mode
+(A0 5.86, A1 5.00), which is the batch-invariance showing up as exactly reproducible
+acceptance. A3 at c=32 in this mode: tau 5.00 / 2228.3 tok/s, i.e. 0.99% from A1.
+
+## Verdict from the pre-registered rules
+
+`uv run python scripts/decide.py --results results_det --benchmark math500 --adaptive-na`
+(exit 0):
+
+```
+verdict: MECHANISM ONLY
+
+  H1  PASS    ms/round(A1)/ms/round(A0) = 0.566
+  H2  FAIL    tau(A1) = 5.00 (min 7.2)
+  H3  PASS    tok/s ratio = 1.318
+  H4  FAIL    tok/s(A1)/tok/s(A3) = 0.990
+  H5  FAIL    tok/s ratio at c=1 = 0.798
+  H6  PASS    min greedy agreement = 1.0000
+  H7  NA      A4 not implementable on this backend (no per-request verify length)
+
+model vs measurement:
+  rho:      predicted 0.50   measured 0.08  (column-scalable share of the round 43.4%)
+  w_tail:   predicted 0.10   measured 0.38  (tau at 9 columns 5.00)
+```
+
+**F9. The verdict is MECHANISM ONLY, and that is the result to report.** The mechanism
+is confirmed: the round time does scale with verify columns (H1, 0.566), throughput does
+improve at serving batch (H3, 1.318), and the improvement is lossless (H6, 1.000). What
+fails is the framing: tau at 9 columns is 5.00, well under the 7.2 the register demanded
+(H2), so the cost is larger than projected; the 9-column arm is 20% slower at c=1 (H5);
+and the block-width control is indistinguishable from the truncation arm (H4, 0.990),
+because the backend makes them the same configuration (F5). The thresholds were not
+moved after the data arrived.
+
+What survives for the report: "at serving batch, DFlash's verify block is the binding
+cost, and halving it recovers 1.32x over DFlash and 2.22x over autoregressive decoding
+at a measured tau of 5.00 with bit-identical outputs". What does not survive:
+"truncation dominates block-width control", which needs a patched draft worker to test.
+
 ## What this does and does not license
 
 - It licences: "at batch 32 on an A100, DFlash's advantage disappears, and halving the

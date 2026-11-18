@@ -72,7 +72,7 @@ def fit_w_tail(tau_measured: float, n_verify: int = 9, lo: float = 0.0,
     return (lo + hi) / 2
 
 
-def evaluate(runs: list[dict]) -> tuple[str, list[tuple[str, str, str]]]:
+def evaluate(runs: list[dict], adaptive_na: bool = False) -> tuple[str, list[tuple[str, str, str]]]:
     """Return (verdict, [(id, PASS|FAIL|MISSING, detail)])."""
     out: list[tuple[str, str, str]] = []
 
@@ -108,7 +108,10 @@ def evaluate(runs: list[dict]) -> tuple[str, list[tuple[str, str, str]]]:
         worst = min(r["exact_match_ar"] for r in a1)
         add("H6", worst >= THRESHOLDS["H6_match_min"], f"min greedy agreement = {worst:.4f}")
 
-    if not a4:
+    if not a4 and adaptive_na:
+        add("H7", "NA", "A4 not implementable: this backend exposes no per-request verify "
+                        "length (E0-Q2 = NO), so adaptivity is unmeasurable, not failed")
+    elif not a4:
         add("H7", None, "missing A4 at c=32")
     else:
         best_fixed = max(mean(cell(runs, arm, 32), "tok_per_s")
@@ -192,6 +195,9 @@ def main() -> int:
     ap.add_argument("--results", default="results")
     ap.add_argument("--benchmark", default="math500")
     ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--adaptive-na", action="store_true",
+                    help="record H7 as N/A because this backend exposes no per-request verify "
+                         "length; only valid with an E0-Q2 = NO evidence line in docs/RESULTS.md")
     args = ap.parse_args()
 
     if args.selftest:
@@ -209,7 +215,7 @@ def main() -> int:
         print(f"no results for {args.benchmark} in {args.results}")
         return 1
 
-    verdict, rows = evaluate(runs)
+    verdict, rows = evaluate(runs, adaptive_na=args.adaptive_na)
     print(f"\nverdict: {verdict}\n")
     for hid, status, detail in rows:
         print(f"  {hid}  {status:<7} {detail}")
