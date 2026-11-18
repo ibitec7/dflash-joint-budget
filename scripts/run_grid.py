@@ -66,6 +66,7 @@ def _config(arm: str, args: argparse.Namespace) -> EngineConfig:
         verify_columns=spec.verify_columns or 17,
         max_new_tokens=args.max_new_tokens,
         temperature=0.0,
+        deterministic=getattr(args, "deterministic", False),
     )
 
 
@@ -117,6 +118,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--seeds", default="0")
     ap.add_argument("--prompts", type=int, default=0, help="cap per benchmark (0 = all frozen)")
     ap.add_argument("--max-new-tokens", type=int, default=256)
+    ap.add_argument("--deterministic", action="store_true",
+                    help="enable sglang's batch-invariant kernels (needed for exact-match gates)")
     ap.add_argument("--out", default="results")
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--dump-texts", action="store_true",

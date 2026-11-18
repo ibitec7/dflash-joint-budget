@@ -1,0 +1,16 @@
+{
+  "arm": "A0",
+  "benchmark": "math500",
+  "concurrency": 4,
+  "seed": 0,
+  "draft_width": 16,
+  "verify_columns": 17,
+  "prompts": 32,
+  "tau": 5.4863,
+  "tok_per_s": 787.86,
+  "ar_tok_per_s": 348.54,
+  "ms_per_round_p50": 16.7074,
+  "ms_per_round_p95": 17.5224,
+  "exact_match_ar": 0.28125,
+  "graph_recaptures": 0
+}

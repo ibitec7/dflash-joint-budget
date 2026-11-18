@@ -113,6 +113,7 @@ class EngineConfig:
     verify_columns: int = 17
     max_new_tokens: int = 256
     temperature: float = 0.0
+    deterministic: bool = False
 
     def __post_init__(self) -> None:
         if self.backend not in BACKENDS:
@@ -214,6 +215,10 @@ class _SGLangBackend:
             "mem_fraction_static": 0.75,
             "trust_remote_code": True,
         }
+        if cfg.deterministic:
+            # Batch-invariant kernels: without this, two identical AR runs at c=32 agree on
+            # only 42% of prompts, so no exact-match gate means anything.
+            kwargs["enable_deterministic_inference"] = True
         if cfg.drafter:
             kwargs.update(
                 speculative_algorithm="DFLASH",

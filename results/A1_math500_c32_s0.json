@@ -6,11 +6,11 @@
   "draft_width": 16,
   "verify_columns": 9,
   "prompts": 32,
-  "tau": 4.8559,
-  "tok_per_s": 3286.63,
-  "ar_tok_per_s": 825.83,
-  "ms_per_round_p50": 30.3218,
-  "ms_per_round_p95": 31.1453,
-  "exact_match_ar": 0.25,
+  "tau": 4.901,
+  "tok_per_s": 3363.7,
+  "ar_tok_per_s": 2451.1,
+  "ms_per_round_p50": 30.3088,
+  "ms_per_round_p95": 30.9,
+  "exact_match_ar": 0.34375,
   "graph_recaptures": 0
 }
