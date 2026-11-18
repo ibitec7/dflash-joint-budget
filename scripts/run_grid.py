@@ -166,8 +166,8 @@ def main(argv: list[str] | None = None) -> int:
                 for c in conc:
                     engine.reset_stats()
                     ar_outs[c] = _chunks(engine, texts, c)
-                    ar_st = engine.stats()
-                    ar_tok[c] = ar_st["tok_per_s"]
+                    ar_st[c] = engine.stats()
+                    ar_tok[c] = ar_st[c]["tok_per_s"]
             finally:
                 engine.close()
             if "A5" in arms:
