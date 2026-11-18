@@ -20,3 +20,31 @@ commits: e3ba3c6, 8395501, c30b598, 1217f5b, d93b9f9, b155a86, 18fd968, 0196266
   have caught it did not exist yet.
 - also: the A1/A0 ratio was being quoted as 1.409 from the two seeds that agree; s0 is 1.498 and
   the 64-prompt run 1.364, so the docs now carry the range 1.32-1.50.
+
+## 2026-11-18 evening (UTC) — the surface, the composition, and the audit
+
+commits: 72925a0, 1bfa599, 24ca5fb, 7d5da11
+
+- what: two sweeps (nine drafter widths x every verify window, math500 and mtbench, 15594 and 21735
+  rounds), a composition script that multiplies acceptance by the engine's round cost with a
+  bootstrap CI, four figures, 13 tests, and an independent numeric audit of every claim in the four
+  docs.
+- worked: acceptance is a property of the verify window, not the drafter's width. At a fixed nine
+  columns the nine blocks span under 3% on math500 (4.284 to 4.409, non-monotone) and 5.2% on
+  mtbench, while raising the window from 9 to 16 columns at b16 is +19.7%. Composed over the
+  shipped block-16 arm: 1.345 math500, 1.344 mtbench, CI [1.291, 1.406], acceptance factor 0.80 and
+  cost factor 1.674.
+- partial: the composition is not end-to-end. The driver indexes the commit chain with one
+  block_size stride, allocates every per-round buffer at bs*block_size, and captures the draft path
+  in a CUDA graph, so draft 16 / verify 9 has no expressible shape (RESULTS F18, with file:line).
+  The model is calibrated against the engine: 0.7% error on default kernels, 14% under graphs, so
+  the defended interval is 1.18x to 1.41x.
+- failed and why: the first composition priced the wide arm by scaling its 16-column verify down to
+  9 with a proportional model, inventing a 39% saving and reporting a cost factor of 1.596 that
+  carried the throughput bar on its own. Measured flatness at batch 1 is 0.8%, so the model was
+  replaced by the flat one and the direction of the cost factor corrected (control over treatment).
+- also: the audit found 25 defects, including a control-arm substitution that would have flipped the
+  tau bar (it was a unit confusion between verify columns and draft width, but vlc.py defaulted to
+  the wrong arm and now does not), mode labels swapped on the 0.998/0.990 pair, a cross-k ratio
+  quoted as equal-k, and H7 printed as NA where decide.py prints PASS. results_s, results_p64 and
+  the n=8 acceptance pass are now in the repo, so the 1.32-1.50 seed spread is sourced.
