@@ -69,17 +69,12 @@ def _config(arm: str, args: argparse.Namespace) -> EngineConfig:
     )
 
 
-def run_cell(cfg: EngineConfig, texts: list[str], c: int, dry_run: bool) -> tuple[list[str], dict]:
-    """One cell: generate over the prompt set in chunks of size c, return texts + stats."""
-    engine = Engine(cfg, dry_run=dry_run)
+def _chunks(engine: Engine, texts: list[str], c: int) -> list[str]:
+    """Generate over the prompt set in chunks of size c on an already-loaded engine."""
     outs: list[str] = []
-    try:
-        for i in range(0, len(texts), c):
-            outs.extend(engine.generate(texts[i:i + c]))
-        st = engine.stats()
-    finally:
-        engine.close()
-    return outs, st
+    for i in range(0, len(texts), c):
+        outs.extend(engine.generate(texts[i:i + c]))
+    return outs
 
 
 def record(arm: str, bench: str, c: int, seed: int, cfg: EngineConfig, st: dict,
@@ -160,31 +155,50 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n{bench}: {len(texts)} prompts from {fx.name}")
 
         for seed in seeds:
-            for c in conc:
-                ar_cfg = _config("A5", args)
-                ar_out, ar_st = run_cell(ar_cfg, texts, c, args.dry_run)
-                ar_tok = ar_st["tok_per_s"]
-                if "A5" in arms:
-                    rec = record("A5", bench, c, seed, ar_cfg, ar_st, 1.0, len(texts), ar_tok)
-                    p = out / f"A5_{bench}_c{c}_s{seed}.json"
-                    p.write_text(json.dumps(rec, indent=2))
+            # One engine per (arm, seed): the verify length is a startup flag, so a new
+            # engine is the only way to change it, but concurrency is not.
+            ar_cfg = _config("A5", args)
+            ar_outs: dict[int, list[str]] = {}
+            ar_tok: dict[int, float] = {}
+            ar_st: dict[int, dict] = {}
+            engine = Engine(ar_cfg, dry_run=args.dry_run)
+            try:
+                for c in conc:
+                    engine.reset_stats()
+                    ar_outs[c] = _chunks(engine, texts, c)
+                    ar_st = engine.stats()
+                    ar_tok[c] = ar_st["tok_per_s"]
+            finally:
+                engine.close()
+            if "A5" in arms:
+                for c in conc:
+                    rec = record("A5", bench, c, seed, ar_cfg, ar_st[c], 1.0, len(texts), ar_tok[c])
+                    (out / f"A5_{bench}_c{c}_s{seed}.json").write_text(json.dumps(rec, indent=2))
                     written += 1
                     print(f"  c={c:<3} A5  tau={rec['tau']:.2f} tok/s={rec['tok_per_s']:.1f}")
 
-                for arm in arms:
-                    if arm == "A5":
-                        continue
-                    cfg = _config(arm, args)
-                    outs, st = run_cell(cfg, texts, c, args.dry_run)
-                    rec = record(arm, bench, c, seed, cfg, st, agreement(outs, ar_out),
-                                 len(texts), ar_tok)
-                    p = out / f"{arm}_{bench}_c{c}_s{seed}.json"
-                    if p.exists() and not args.force:
-                        raise SystemExit(f"{p} exists; rerun with --force to overwrite measurements")
-                    p.write_text(json.dumps(rec, indent=2))
-                    written += 1
-                    print(f"  c={c:<3} {arm} tau={rec['tau']:.2f} tok/s={rec['tok_per_s']:.1f} "
-                          f"match={rec['exact_match_ar']:.3f}")
+            for arm in arms:
+                if arm == "A5":
+                    continue
+                cfg = _config(arm, args)
+                engine = Engine(cfg, dry_run=args.dry_run)
+                try:
+                    for c in conc:
+                        engine.reset_stats()
+                        outs = _chunks(engine, texts, c)
+                        st = engine.stats()
+                        rec = record(arm, bench, c, seed, cfg, st,
+                                     agreement(outs, ar_outs[c]), len(texts), ar_tok[c])
+                        p = out / f"{arm}_{bench}_c{c}_s{seed}.json"
+                        if p.exists() and not args.force:
+                            raise SystemExit(
+                                f"{p} exists; rerun with --force to overwrite measurements")
+                        p.write_text(json.dumps(rec, indent=2))
+                        written += 1
+                        print(f"  c={c:<3} {arm} tau={rec['tau']:.2f} "
+                              f"tok/s={rec['tok_per_s']:.1f} match={rec['exact_match_ar']:.3f}")
+                finally:
+                    engine.close()
 
     print(f"\n{written} records -> {out}")
     if args.dry_run:

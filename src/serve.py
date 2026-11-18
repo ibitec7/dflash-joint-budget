@@ -509,6 +509,22 @@ class Engine:
         self._account(len(prompts), dt, metas)
         return texts
 
+    def reset_stats(self) -> None:
+        """Drop accumulated counters so the next cell's stats describe only that cell.
+
+        One engine serves every concurrency for an arm (the verify length is a startup
+        flag, concurrency is not), so without this the c=8 record would include c=1 and
+        c=4 in its tau and tok/s. Warmup state is kept on purpose.
+        """
+        self._samples = []
+        self._rounds = 0
+        self._accepted = 0.0
+        self._tokens = 0
+        self._calls = 0
+        self._prompts = 0
+        self._wall = 0.0
+        self._batch_sizes = set()
+
     def stats(self) -> dict:
         if self._log_path and not self.dry_run:
             observed = _read_log_recaptures(self._log_path)
