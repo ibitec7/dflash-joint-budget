@@ -12,7 +12,7 @@ import json
 import statistics
 from pathlib import Path
 
-__all__ = ["agreement", "tau_table", "load_rows", "summarise"]
+__all__ = ["agreement", "load_rows", "summarise", "tau_table"]
 
 
 def agreement(drafts: list[int], verified: list[int]) -> list[bool]:

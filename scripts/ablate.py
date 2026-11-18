@@ -6,7 +6,10 @@ Run: uv run python scripts/ablate.py --results results_det --benchmark math500
 
 from __future__ import annotations
 
-import argparse, json, statistics, tempfile
+import argparse
+import json
+import statistics
+import tempfile
 from pathlib import Path
 
 KS = (4, 6, 9, 12, 16)
@@ -116,8 +119,8 @@ def selftest():
     # 1.20x on tau at c=32 is a WIN at 1.10; the hand-built agg below exercises LOSE.
     table = [("A0", 5.50, 2000.0, 44.0), ("A5", 1.00, 1000.0, 16.0),
              ("V16k9", 4.40, 2400.0, 36.0), ("B9", 4.00, 2000.0, 44.0)]
-    records = [dict(arm=a, benchmark="math500", concurrency=32, tau=t, tok_per_s=s,
-                    ms_per_round_p50=m) for a, t, s, m in table]
+    records = [{"arm": a, "benchmark": "math500", "concurrency": 32, "tau": t,
+                "tok_per_s": s, "ms_per_round_p50": m} for a, t, s, m in table]
     with tempfile.TemporaryDirectory() as tmp:
         for rec in records:
             Path(tmp, f"{rec['arm']}_math500_c32_s0.json").write_text(json.dumps(rec))
