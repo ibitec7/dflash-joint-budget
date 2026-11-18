@@ -220,6 +220,16 @@ class _SGLangBackend:
             # only 42% of prompts, so no exact-match gate means anything.
             kwargs["enable_deterministic_inference"] = True
         if cfg.drafter:
+            if cfg.draft_width != cfg.submitted:
+                # speculative_num_draft_tokens sets the drafter's block AND the verified draft
+                # count, so an arm declaring a wider draft than it submits would run as the
+                # narrower block without saying so (A1's records are block-8 numbers for this
+                # reason). Refuse rather than measure a different configuration.
+                raise ValueError(
+                    f"draft_width={cfg.draft_width} != submitted={cfg.submitted}: this backend "
+                    "cannot express draft width and verify length separately; it would run as "
+                    f"block {cfg.submitted}. Use experiments/standalone/run_accept.py."
+                )
             kwargs.update(
                 speculative_algorithm="DFLASH",
                 speculative_draft_model_path=cfg.drafter,
@@ -550,6 +560,9 @@ class Engine:
             "drafter": self.cfg.drafter,
             "draft_width": self.cfg.draft_width,
             "verify_columns": self.cfg.verify_columns,
+            # What the backend actually ran, which the declared arm need not equal.
+            "executed_draft_width": self.cfg.submitted,
+            "executed_verify_columns": self.cfg.submitted + 1,
             "submitted_tokens": self.cfg.submitted if self.cfg.drafter else 0,
             "temperature": self.cfg.temperature,
             "calls": self._calls,

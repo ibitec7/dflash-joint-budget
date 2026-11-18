@@ -144,6 +144,50 @@ A1/A3 number in this file is block-k/verify-k, k equal. The "draft wide, verify 
 never been run; it is registered as H4-VLC in `docs/EXPERIMENTS.md` and needs the standalone
 instrument, because no public flag can express it.
 
+
+## Correction (2026-11-19): the arms were not the configurations their labels claim
+
+Found while wiring the standalone instrument, then confirmed in the source.
+
+`SGLangBackend` built the engine with exactly one speculative flag,
+`speculative_num_draft_tokens = verify_columns - 1` (`src/serve.py`). `Arm.draft_width` never
+reached the backend. Because that single flag sets the drafter's block size *and* the number of
+verified draft tokens, **every arm ran with a block equal to its submitted length**:
+
+| arm | declared | what actually launched | tau (c=32, det) |
+|---|---|---|---|
+| A0 | draft 16 / 17 columns | draft 16 / 17 columns | 5.86 |
+| A1 | draft 16 / 9 columns | **draft 8 / 9 columns** | 5.001 |
+| A3 | draft 8 / 9 columns | draft 8 / 9 columns | 5.001 |
+
+A1 and A3 are the same configuration. Their 0.990 (default kernels) and 0.99% (deterministic)
+agreement is **not** a durability result; it is one configuration measured twice.
+
+### What this retracts, and what it buys
+
+- **Retracted:** reading A1-vs-A3 as "truncation reproduces the wide-draft gain". No arm ever
+  drafted wider than it verified. The report may not attribute anything to a verify window.
+- **Retracted:** reading A1-vs-A0 as a truncation effect. That comparison is the paper's own T8
+  diagonal, draft 16 (17 columns) versus draft 8 (9 columns), measured at c=32 on an A100:
+  **1.32x** deterministic. It reproduces the paper's §5.5.4 recommendation at serving batch, and it
+  is a *width* result, not a truncation result.
+- **Gained:** a measured noise floor. Two runs of one configuration sit **1.0%** apart, so the
+  pre-registered 1.10x bar is roughly ten times run-to-run noise. Any VLC effect under 1% is
+  indistinguishable from a repeat measurement, which is now a number rather than an assumption.
+
+### Fixed at the root
+
+`SGLangBackend.__init__` now refuses an arm whose `draft_width` differs from `submitted`, naming
+the coupling and pointing at the standalone instrument, and every record carries
+`executed_draft_width` / `executed_verify_columns` beside the declared ones. A mislabel of this
+kind can no longer be produced silently.
+
+### Consequence for the claim
+
+The treatment cell, draft 16 and verify 9 columns, has never been run and **cannot** be run on this
+backend. `experiments/standalone/run_accept.py` measures it, gated on reproducing the checkpoint's
+own `spec_generate` token for token. Until that gate passes, no acceptance number from it counts.
+
 ## What this does and does not license
 
 - It licences: "at batch 32 on an A100, DFlash's advantage disappears, and halving the

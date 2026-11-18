@@ -101,3 +101,12 @@ they answer whether the measured gain is above a pre-registered usefulness thres
 threshold is a judgement made now, in the open, at 15% (H3). Anything above it is a result;
 anything below it is a narrower result. The projection's job was only to make the experiment worth
 funding.
+
+### 2026-11-19 — executed vs declared geometry (before any VLC run)
+
+`serve.py` passed only `speculative_num_draft_tokens = verify_columns - 1`, so `draft_width` was
+never plumbed and every stored arm ran block == submitted. A1 and A3 are therefore one
+configuration; H4's 0.990 is a repeat measurement of it (noise floor ~1%), and A0-vs-A3 is the
+paper's T8 diagonal at c=32, not a truncation test. The backend now refuses an inexpressible arm
+and records `executed_draft_width`/`executed_verify_columns`. H4-VLC remains untested and is the
+only cell that can license the claim; it is measured by `experiments/standalone/run_accept.py`.
