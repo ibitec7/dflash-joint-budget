@@ -205,6 +205,35 @@ math500, 32 prompts, 256 new tokens, default kernels, one box, one pass per cell
   verifying only 9 columns removes the cost the wide block pays but not the acceptance it earns.
   The bar is stated in advance: tau_9(16) >= 1.05 x tau_9(8) and tok/s >= 1.10 x the narrow arm.
 
+## F14 (provisional, n=8). The first validated acceptance measurement lands inside the collapse band
+
+math500, 8 prompts, raw prompt convention, 256 new tokens, greedy, one pass per block through the
+loop that reproduces the checkpoint's own `spec_generate` token for token (reference tau 3.73 on
+fresh prompts, gate passed at 0.6 x the engine's 5.86):
+
+| quantity | value |
+|---|---|
+| tau_16(16) | 4.452 |
+| tau_9(16) - the treatment cell | **3.948** |
+| tau_9(9) - the truncation control | **3.901** |
+| ratio tau_9(16) / tau_9(9) | **1.012** |
+
+The pre-committed collapse rule (`docs/NOVELTY.md` §3) fires on ratio in [0.95, 1.05] and reads:
+the run counts as a replication plus a negative result, and the contribution loses the "better
+knob" title. 1.012 is inside that band.
+
+Read as a decomposition, not as a verdict: capping the wide block at 9 columns costs
+4.452 -> 3.948, **11% of its committed tokens per round**, and drafting narrow instead of wide
+costs a further 3.948 -> 3.901, **1.2%**. So the wide block's advantage is not in its first nine
+columns; it is in the columns the window throws away. That is the mechanism the proposal was
+betting on, and at n=8 it is not there.
+
+Caveats that keep this provisional: n=8 prompts, ~520 rounds, no CI yet, and the harness sits 24%
+below the engine's absolute tau (4.45 vs 5.86 at block 16) because it decodes from its own greedy
+contexts rather than the engine's scheduler state. The ratio is unaffected by that offset (both
+arms ride the same contexts), but the absolute level is not comparable and must not be quoted as a
+reproduction of the engine. The 32-prompt run on both benchmarks is the version that decides.
+
 ## Verdict from the pre-registered rules
 
 `uv run python scripts/decide.py --results results_det --benchmark math500 --adaptive-na`
