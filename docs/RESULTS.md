@@ -388,6 +388,31 @@ measured equal-k comparisons are at k in {5,8,9,10,12}. Per-prompt clustered int
 the cells in this table and the paired per-prompt test in F15 is the right one for the verdict cell.
 Both say the same thing.
 
+## F18. Why the VLC cell stays composed: the backend's width is one variable, not two
+
+The one measurement that would turn F16 from composed into measured is an engine run with the
+drafter at block 16 and a 9-column verify. It cannot be launched, and this is the source evidence
+that it is a structural limit rather than a missing flag (`dflash_worker_v2.py` in the SGLang tree):
+
+1. **The commit chain is indexed with one stride.** `_chain_accept_indices(commit_lens, block_size)`
+   builds flat offsets into the verify `out_cache_loc` as `row_offsets * block_size + steps`, so the
+   committed positions are addressed with the same width the verify used. Verifying 9 columns while
+   drafting 16 changes the stride under every downstream gather (lines 297-304).
+2. **Every per-round buffer is sized once, as `bs * block_size`.** The accept state allocates
+   `positions`, `slots`, and `out_tokens` at `(bs, block_size)` in the constructor (lines 504-520),
+   and the draft sampler sizes its static buffers the same way "to keep the in-graph select
+   replay-safe" (line 235). Two widths means two buffer sets or a dynamic shape.
+3. **The draft path is captured.** The selector decode is "folded into the draft cuda graph"
+   (lines 377-379), and the engine's measured cost is under those captured graphs. Varying the
+   verify width per round either recaptures per width or falls off the graph, which changes the very
+   cost the composition is trying to estimate.
+
+So the honest end state is a composition with a measured error bound, not a point estimate: on the
+engine's own two arms the tau-times-cost model reproduces the measured throughput to 0.7% with
+default kernels and over-predicts by 14% under CUDA graphs (F16). Anyone who wants the end-to-end
+number needs the backend to separate `draft_width` from `verify_width` at those three sites, which
+is a driver change with a token-identical gate to satisfy, not an experiment setting.
+
 ## Verdict from the pre-registered rules
 
 `uv run python scripts/decide.py --results results_det --benchmark math500 --adaptive-na`
