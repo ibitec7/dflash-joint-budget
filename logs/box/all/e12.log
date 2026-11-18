@@ -1,0 +1,29 @@
+E12-START 2026-11-18T17:15:02Z head=8db2712
+=== mode=raw ===
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights: 100%|██████████| 399/399 [00:00<00:00, 8835.71it/s]
+Loading weights:   0%|          | 0/58 [00:00<?, ?it/s]Loading weights: 100%|██████████| 58/58 [00:00<00:00, 8161.77it/s]
+[transformers] Calling `crop` with a positive value is deprecated and will be removed in version 5.18. Please use a negative integer to remove that number of tokens from the cache instead.
+CONFIG block_size=16 mask=151669 layers=[1, 9, 17, 25, 33]
+PROMPTS 2 from frozen_math500 (same set the engine runs)
+CONTEXTS 2 generated, first len=246
+[REF 0] identical=True ref=(1, 374) mine=(1, 374) tau=3.46 rounds=74
+[REF 1] identical=True ref=(1, 369) mine=(1, 369) tau=4.00 rounds=64
+REFERENCE_TAU mean=3.73 per prompt=[3.46, 4.0] floor=3.52 engine=5.86
+REFERENCE_OK mode=raw
+TAU b16:k9=1.00
+WROTE experiments/standalone/probe2_raw.json rows=2
+E12-raw-rc=0
+=== mode=chat ===
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights: 100%|██████████| 399/399 [00:00<00:00, 8243.33it/s]
+Loading weights:   0%|          | 0/58 [00:00<?, ?it/s]Loading weights: 100%|██████████| 58/58 [00:00<00:00, 11933.76it/s]
+[transformers] Calling `crop` with a positive value is deprecated and will be removed in version 5.18. Please use a negative integer to remove that number of tokens from the cache instead.
+CONFIG block_size=16 mask=151669 layers=[1, 9, 17, 25, 33]
+PROMPTS 2 from frozen_math500 (same set the engine runs)
+CONTEXTS 2 generated, first len=254
+[REF 0] identical=True ref=(1, 382) mine=(1, 382) tau=2.84 rounds=90
+[REF 1] identical=True ref=(1, 377) mine=(1, 377) tau=2.67 rounds=96
+REFERENCE_TAU mean=2.76 per prompt=[2.84, 2.67] floor=3.52 engine=5.86
+  the reference accepts too few drafts per round: at that level both loops are plain greedy decoding and agree whether or not the drafter works, so agreement proves nothing
+REFERENCE_DEGENERATE: prompt convention or wiring is wrong, refusing to measure
+E12-chat-rc=1
+E12-ALL-DONE 2026-11-18T17:16:14Z

@@ -1,0 +1,11 @@
+E3-START 2026-11-18T15:28:48Z HEAD=6134047
+===== A3 (block 8) =====
+  c=32  A3 tau=4.85 tok/s=3065.9 match=0.328
+1 records -> results
+===== AR determinism A =====
+  c=32  A5  tau=1.00 tok/s=2420.4
+1 records -> det_a
+===== AR determinism B =====
+  c=32  A5  tau=1.00 tok/s=2418.5
+1 records -> det_b
+E3-DONE 2026-11-18T15:34:57Z

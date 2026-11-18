@@ -1,0 +1,13 @@
+E9-START 2026-11-18T16:52:56Z head=8db2712
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights: 100%|██████████| 399/399 [00:00<00:00, 16929.97it/s]
+Loading weights:   0%|          | 0/58 [00:00<?, ?it/s]Loading weights: 100%|██████████| 58/58 [00:00<00:00, 7132.33it/s]
+[transformers] Calling `crop` with a positive value is deprecated and will be removed in version 5.18. Please use a negative integer to remove that number of tokens from the cache instead.
+CONFIG block_size=16 mask=151669 layers=[1, 9, 17, 25, 33]
+PROMPTS 32 from frozen_mtbench (same set the engine runs)
+CONTEXTS 32 generated, first len=191
+[REF 0] identical=False ref=(1, 111) mine=(1, 112) tau=3.27 rounds=15
+  REF  [151667, 198, 32313, 11, 358, 1184, 311, 1855, 264, 17755, 3119, 429, 74662, 19584, 11, 45270]
+  MINE [151667, 198, 32313, 11, 358, 1184, 311, 1855, 264, 17755, 3119, 429, 74662, 19584, 11, 45270]
+REFERENCE_MISMATCH: instrument not validated, refusing to measure
+E9-MT-DONE rc=1
+E9-ALL-DONE 2026-11-18T16:55:37Z

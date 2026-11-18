@@ -1,0 +1,17 @@
+E13-START 2026-11-18T17:20:53Z head=8db2712
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights: 100%|██████████| 399/399 [00:00<00:00, 7644.09it/s]
+Loading weights:   0%|          | 0/58 [00:00<?, ?it/s]Loading weights: 100%|██████████| 58/58 [00:00<00:00, 8686.65it/s]
+[transformers] Calling `crop` with a positive value is deprecated and will be removed in version 5.18. Please use a negative integer to remove that number of tokens from the cache instead.
+CONFIG block_size=16 mask=151669 layers=[1, 9, 17, 25, 33]
+PROMPTS 8 from frozen_math500 (same set the engine runs)
+CONTEXTS 8 generated, first len=246
+[REF 0] identical=True ref=(1, 374) mine=(1, 374) tau=3.46 rounds=74
+[REF 1] identical=True ref=(1, 369) mine=(1, 369) tau=4.00 rounds=64
+REFERENCE_TAU mean=3.73 per prompt=[3.46, 4.0] floor=3.52 engine=5.86
+REFERENCE_OK mode=raw
+  prompt 8/8 done
+TAU b16:k9=3.95 b9:k9=3.90
+WROTE experiments/standalone/accept_e13.json rows=985
+E13-rc=0
+TAU16 4.452 TAU9_16 3.948 TAU9_9 3.901 ratio 1.012
+E13-ALL-DONE 2026-11-18T17:22:38Z

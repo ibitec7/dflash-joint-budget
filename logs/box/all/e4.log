@@ -1,0 +1,14 @@
+E4-START 2026-11-18T15:37:15Z HEAD=42e9519
+===== AR det A =====
+  c=32  A5  tau=1.00 tok/s=990.2
+1 records -> detd_a
+===== AR det B =====
+  c=32  A5  tau=1.00 tok/s=989.9
+1 records -> detd_b
+===== A0 det =====
+  c=32  A0 tau=5.66 tok/s=1495.8 match=1.000
+1 records -> detd_a
+===== A1 det =====
+  c=32  A1 tau=4.88 tok/s=1842.2 match=1.000
+1 records -> detd_a
+E4-DONE 2026-11-18T15:48:25Z

@@ -1,0 +1,37 @@
+E10-START 2026-11-18T17:04:12Z head=8db2712
+0 MiB, 0 %
+=== math500 ===
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights: 100%|██████████| 399/399 [00:00<00:00, 7569.95it/s]
+Loading weights:   0%|          | 0/58 [00:00<?, ?it/s]Loading weights: 100%|██████████| 58/58 [00:00<00:00, 6868.14it/s]
+[transformers] Calling `crop` with a positive value is deprecated and will be removed in version 5.18. Please use a negative integer to remove that number of tokens from the cache instead.
+CONFIG block_size=16 mask=151669 layers=[1, 9, 17, 25, 33]
+PROMPTS 32 from frozen_math500 (same set the engine runs)
+CONTEXTS 32 generated, first len=254
+[REF 0] identical=True ref=(1, 174) mine=(1, 174) tau=3.20 rounds=15
+[REF 1] identical=True ref=(1, 169) mine=(1, 169) tau=1.78 rounds=27
+REFERENCE_OK
+  prompt 8/32 done
+  prompt 16/32 done
+  prompt 24/32 done
+  prompt 32/32 done
+TAU b16:k9=1.03 b12:k9=1.00 b9:k9=1.00
+WROTE experiments/standalone/accept_math500.json rows=128
+E10-math500-rc=0
+=== mtbench ===
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights: 100%|██████████| 399/399 [00:00<00:00, 7217.15it/s]
+Loading weights:   0%|          | 0/58 [00:00<?, ?it/s]Loading weights: 100%|██████████| 58/58 [00:00<00:00, 8425.80it/s]
+[transformers] Calling `crop` with a positive value is deprecated and will be removed in version 5.18. Please use a negative integer to remove that number of tokens from the cache instead.
+CONFIG block_size=16 mask=151669 layers=[1, 9, 17, 25, 33]
+PROMPTS 32 from frozen_mtbench (same set the engine runs)
+CONTEXTS 32 generated, first len=191
+[REF 0] identical=True ref=(1, 111) mine=(1, 111) tau=3.20 rounds=15
+[REF 1] identical=True ref=(1, 235) mine=(1, 235) tau=2.53 rounds=19
+REFERENCE_OK
+  prompt 8/32 done
+  prompt 16/32 done
+  prompt 24/32 done
+  prompt 32/32 done
+TAU b16:k9=1.00 b12:k9=1.00 b9:k9=1.00
+WROTE experiments/standalone/accept_mtbench.json rows=128
+E10-mtbench-rc=0
+E10-ALL-DONE 2026-11-18T17:09:20Z

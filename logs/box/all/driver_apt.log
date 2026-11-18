@@ -1,0 +1,233 @@
+Reading package lists...
+Building dependency tree...
+Reading state information...
+linux-headers-5.15.0-126-generic is already the newest version (5.15.0-126.136).
+linux-headers-5.15.0-126-generic set to manually installed.
+The following packages were automatically installed and are no longer required:
+  nvidia-firmware-565-565.57.01 nvidia-modprobe
+Use 'sudo apt autoremove' to remove them.
+The following additional packages will be installed:
+  libnvidia-cfg1-580-server libnvidia-common-580-server
+  libnvidia-compute-580-server libnvidia-decode-580-server
+  libnvidia-egl-wayland1 libnvidia-encode-580-server
+  libnvidia-extra-580-server libnvidia-fbc1-580-server libnvidia-gl-580-server
+  nvidia-compute-utils-580-server nvidia-dkms-580-server
+  nvidia-driver-565-server nvidia-firmware-580-server-580.178.04
+  nvidia-kernel-common-580-server nvidia-kernel-source-580-server
+  nvidia-utils-580-server xserver-xorg-video-nvidia-580-server
+Recommended packages:
+  libnvidia-compute-580-server:i386 libnvidia-decode-580-server:i386
+  libnvidia-encode-580-server:i386 libnvidia-fbc1-580-server:i386
+  libnvidia-gl-580-server:i386
+The following packages will be REMOVED:
+  libnvidia-cfg1-565 libnvidia-common-565 libnvidia-compute-565
+  libnvidia-decode-565 libnvidia-encode-565 libnvidia-extra-565
+  libnvidia-fbc1-565 libnvidia-gl-565 nvidia-compute-utils-565 nvidia-dkms-565
+  nvidia-driver-565 nvidia-kernel-common-565 nvidia-kernel-source-565
+  nvidia-utils-565 xserver-xorg-video-nvidia-565
+The following NEW packages will be installed:
+  libnvidia-cfg1-580-server libnvidia-common-580-server
+  libnvidia-compute-580-server libnvidia-decode-580-server
+  libnvidia-egl-wayland1 libnvidia-encode-580-server
+  libnvidia-extra-580-server libnvidia-fbc1-580-server libnvidia-gl-580-server
+  nvidia-compute-utils-580-server nvidia-dkms-580-server
+  nvidia-driver-565-server nvidia-driver-580-server
+  nvidia-firmware-580-server-580.178.04 nvidia-kernel-common-580-server
+  nvidia-kernel-source-580-server nvidia-utils-580-server
+  xserver-xorg-video-nvidia-580-server
+0 upgraded, 18 newly installed, 15 to remove and 330 not upgraded.
+Need to get 401 MB of archives.
+After this operation, 370 MB of additional disk space will be used.
+Get:1 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 nvidia-driver-565-server amd64 565.57.01-0ubuntu0.22.04.5 [10.4 kB]
+Get:2 https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64  libnvidia-egl-wayland1 1:1.1.23-1ubuntu1 [35.8 kB]
+Get:3 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 nvidia-firmware-580-server-580.178.04 amd64 580.178.04-0ubuntu0.22.04.1 [76.0 MB]
+Get:4 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 nvidia-kernel-common-580-server amd64 580.178.04-0ubuntu0.22.04.1 [792 kB]
+Get:5 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 libnvidia-common-580-server all 580.178.04-0ubuntu0.22.04.1 [18.6 kB]
+Get:6 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 libnvidia-compute-580-server amd64 580.178.04-0ubuntu0.22.04.1 [60.0 MB]
+Get:7 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 libnvidia-gl-580-server amd64 580.178.04-0ubuntu0.22.04.1 [173 MB]
+Get:8 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 nvidia-kernel-source-580-server amd64 580.178.04-0ubuntu0.22.04.1 [84.0 MB]
+Get:9 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 nvidia-dkms-580-server amd64 580.178.04-0ubuntu0.22.04.1 [52.1 kB]
+Get:10 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 libnvidia-extra-580-server amd64 580.178.04-0ubuntu0.22.04.1 [79.6 kB]
+Get:11 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 nvidia-compute-utils-580-server amd64 580.178.04-0ubuntu0.22.04.1 [132 kB]
+Get:12 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 libnvidia-decode-580-server amd64 580.178.04-0ubuntu0.22.04.1 [3186 kB]
+Get:13 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 libnvidia-encode-580-server amd64 580.178.04-0ubuntu0.22.04.1 [117 kB]
+Get:14 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 nvidia-utils-580-server amd64 580.178.04-0ubuntu0.22.04.1 [610 kB]
+Get:15 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 libnvidia-cfg1-580-server amd64 580.178.04-0ubuntu0.22.04.1 [164 kB]
+Get:16 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 xserver-xorg-video-nvidia-580-server amd64 580.178.04-0ubuntu0.22.04.1 [1799 kB]
+Get:17 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 libnvidia-fbc1-580-server amd64 580.178.04-0ubuntu0.22.04.1 [96.0 kB]
+Get:18 http://archive.ubuntu.com/ubuntu jammy-updates/restricted amd64 nvidia-driver-580-server amd64 580.178.04-0ubuntu0.22.04.1 [511 kB]
+Fetched 401 MB in 3s (135 MB/s)
+Selecting previously unselected package nvidia-driver-565-server.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 149236 files and directories currently installed.)
+Preparing to unpack .../nvidia-driver-565-server_565.57.01-0ubuntu0.22.04.5_amd64.deb ...
+Unpacking nvidia-driver-565-server (565.57.01-0ubuntu0.22.04.5) ...
+dpkg: nvidia-driver-565: dependency problems, but removing anyway as you requested:
+ cuda-drivers-565 depends on nvidia-driver-565 (>= 565.57.01) | nvidia-driver-565-open (>= 565.57.01) | nvidia-driver-565-server (>= 565.57.01) | nvidia-driver-565-server-open (>= 565.57.01); however:
+  Package nvidia-driver-565 is to be removed.
+  Package nvidia-driver-565-open is not installed.
+  Package nvidia-driver-565-server is not configured yet.
+  Package nvidia-driver-565-server-open is not installed.
+
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 149239 files and directories currently installed.)
+Removing nvidia-driver-565 (565.57.01-0ubuntu1) ...
+Removing libnvidia-gl-565:amd64 (565.57.01-0ubuntu1) ...
+Removing nvidia-dkms-565 (565.57.01-0ubuntu1) ...
+Removing all DKMS Modules
+Done.
+update-initramfs: deferring update (trigger activated)
+Removing nvidia-kernel-common-565 (565.57.01-0ubuntu1) ...
+update-initramfs: deferring update (trigger activated)
+Selecting previously unselected package nvidia-firmware-580-server-580.178.04.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 149069 files and directories currently installed.)
+Preparing to unpack .../nvidia-firmware-580-server-580.178.04_580.178.04-0ubuntu0.22.04.1_amd64.deb ...
+Unpacking nvidia-firmware-580-server-580.178.04 (580.178.04-0ubuntu0.22.04.1) ...
+Selecting previously unselected package nvidia-kernel-common-580-server.
+Preparing to unpack .../nvidia-kernel-common-580-server_580.178.04-0ubuntu0.22.04.1_amd64.deb ...
+Unpacking nvidia-kernel-common-580-server (580.178.04-0ubuntu0.22.04.1) ...
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 149094 files and directories currently installed.)
+Removing libnvidia-common-565 (565.57.01-0ubuntu1) ...
+Selecting previously unselected package libnvidia-common-580-server.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 149089 files and directories currently installed.)
+Preparing to unpack .../libnvidia-common-580-server_580.178.04-0ubuntu0.22.04.1_all.deb ...
+Unpacking libnvidia-common-580-server (580.178.04-0ubuntu0.22.04.1) ...
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 149096 files and directories currently installed.)
+Removing nvidia-utils-565 (565.57.01-0ubuntu1) ...
+Removing nvidia-compute-utils-565 (565.57.01-0ubuntu1) ...
+Removing libnvidia-compute-565:amd64 (565.57.01-0ubuntu1) ...
+Selecting previously unselected package libnvidia-compute-580-server:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 149052 files and directories currently installed.)
+Preparing to unpack .../libnvidia-compute-580-server_580.178.04-0ubuntu0.22.04.1_amd64.deb ...
+Unpacking libnvidia-compute-580-server:amd64 (580.178.04-0ubuntu0.22.04.1) ...
+Selecting previously unselected package libnvidia-egl-wayland1:amd64.
+Preparing to unpack .../libnvidia-egl-wayland1_1%3a1.1.23-1ubuntu1_amd64.deb ...
+Unpacking libnvidia-egl-wayland1:amd64 (1:1.1.23-1ubuntu1) ...
+Selecting previously unselected package libnvidia-gl-580-server:amd64.
+Preparing to unpack .../libnvidia-gl-580-server_580.178.04-0ubuntu0.22.04.1_amd64.deb ...
+Unpacking libnvidia-gl-580-server:amd64 (580.178.04-0ubuntu0.22.04.1) ...
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 149131 files and directories currently installed.)
+Removing nvidia-kernel-source-565 (565.57.01-0ubuntu1) ...
+Selecting previously unselected package nvidia-kernel-source-580-server.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 148650 files and directories currently installed.)
+Preparing to unpack .../nvidia-kernel-source-580-server_580.178.04-0ubuntu0.22.04.1_amd64.deb ...
+Unpacking nvidia-kernel-source-580-server (580.178.04-0ubuntu0.22.04.1) ...
+Selecting previously unselected package nvidia-dkms-580-server.
+Preparing to unpack .../nvidia-dkms-580-server_580.178.04-0ubuntu0.22.04.1_amd64.deb ...
+Unpacking nvidia-dkms-580-server (580.178.04-0ubuntu0.22.04.1) ...
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 149187 files and directories currently installed.)
+Removing libnvidia-extra-565:amd64 (565.57.01-0ubuntu1) ...
+Selecting previously unselected package libnvidia-extra-580-server:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 149180 files and directories currently installed.)
+Preparing to unpack .../libnvidia-extra-580-server_580.178.04-0ubuntu0.22.04.1_amd64.deb ...
+Unpacking libnvidia-extra-580-server:amd64 (580.178.04-0ubuntu0.22.04.1) ...
+Selecting previously unselected package nvidia-compute-utils-580-server.
+Preparing to unpack .../nvidia-compute-utils-580-server_580.178.04-0ubuntu0.22.04.1_amd64.deb ...
+Unpacking nvidia-compute-utils-580-server (580.178.04-0ubuntu0.22.04.1) ...
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 149199 files and directories currently installed.)
+Removing libnvidia-encode-565:amd64 (565.57.01-0ubuntu1) ...
+Removing libnvidia-decode-565:amd64 (565.57.01-0ubuntu1) ...
+Selecting previously unselected package libnvidia-decode-580-server:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 149184 files and directories currently installed.)
+Preparing to unpack .../libnvidia-decode-580-server_580.178.04-0ubuntu0.22.04.1_amd64.deb ...
+Unpacking libnvidia-decode-580-server:amd64 (580.178.04-0ubuntu0.22.04.1) ...
+Selecting previously unselected package libnvidia-encode-580-server:amd64.
+Preparing to unpack .../libnvidia-encode-580-server_580.178.04-0ubuntu0.22.04.1_amd64.deb ...
+Unpacking libnvidia-encode-580-server:amd64 (580.178.04-0ubuntu0.22.04.1) ...
+Selecting previously unselected package nvidia-utils-580-server.
+Preparing to unpack .../nvidia-utils-580-server_580.178.04-0ubuntu0.22.04.1_amd64.deb ...
+Unpacking nvidia-utils-580-server (580.178.04-0ubuntu0.22.04.1) ...
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 149213 files and directories currently installed.)
+Removing xserver-xorg-video-nvidia-565 (565.57.01-0ubuntu1) ...
+Removing libnvidia-cfg1-565:amd64 (565.57.01-0ubuntu1) ...
+Selecting previously unselected package libnvidia-cfg1-580-server:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 149202 files and directories currently installed.)
+Preparing to unpack .../libnvidia-cfg1-580-server_580.178.04-0ubuntu0.22.04.1_amd64.deb ...
+Unpacking libnvidia-cfg1-580-server:amd64 (580.178.04-0ubuntu0.22.04.1) ...
+Selecting previously unselected package xserver-xorg-video-nvidia-580-server.
+Preparing to unpack .../xserver-xorg-video-nvidia-580-server_580.178.04-0ubuntu0.22.04.1_amd64.deb ...
+Unpacking xserver-xorg-video-nvidia-580-server (580.178.04-0ubuntu0.22.04.1) ...
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 149213 files and directories currently installed.)
+Removing libnvidia-fbc1-565:amd64 (565.57.01-0ubuntu1) ...
+Selecting previously unselected package libnvidia-fbc1-580-server:amd64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 149208 files and directories currently installed.)
+Preparing to unpack .../libnvidia-fbc1-580-server_580.178.04-0ubuntu0.22.04.1_amd64.deb ...
+Unpacking libnvidia-fbc1-580-server:amd64 (580.178.04-0ubuntu0.22.04.1) ...
+Selecting previously unselected package nvidia-driver-580-server.
+Preparing to unpack .../nvidia-driver-580-server_580.178.04-0ubuntu0.22.04.1_amd64.deb ...
+Unpacking nvidia-driver-580-server (580.178.04-0ubuntu0.22.04.1) ...
+Setting up nvidia-kernel-source-580-server (580.178.04-0ubuntu0.22.04.1) ...
+Setting up nvidia-firmware-580-server-580.178.04 (580.178.04-0ubuntu0.22.04.1) ...
+Setting up libnvidia-egl-wayland1:amd64 (1:1.1.23-1ubuntu1) ...
+Setting up nvidia-kernel-common-580-server (580.178.04-0ubuntu0.22.04.1) ...
+update-initramfs: deferring update (trigger activated)
+Setting up libnvidia-common-580-server (580.178.04-0ubuntu0.22.04.1) ...
+Setting up libnvidia-cfg1-580-server:amd64 (580.178.04-0ubuntu0.22.04.1) ...
+Setting up nvidia-dkms-580-server (580.178.04-0ubuntu0.22.04.1) ...
+update-initramfs: deferring update (trigger activated)
+Loading new nvidia-srv-580.178.04 DKMS files...
+Building for 5.15.0-126-generic
+Building for architecture x86_64
+Building initial module for 5.15.0-126-generic
+Secure Boot not enabled on this system.
+Done.
+
+nvidia.ko:
+Running module version sanity check.
+ - Original module
+   - No original module exists within this kernel
+ - Installation
+   - Installing to /lib/modules/5.15.0-126-generic/updates/dkms/
+
+nvidia-modeset.ko:
+Running module version sanity check.
+ - Original module
+   - No original module exists within this kernel
+ - Installation
+   - Installing to /lib/modules/5.15.0-126-generic/updates/dkms/
+
+nvidia-drm.ko:
+Running module version sanity check.
+ - Original module
+   - No original module exists within this kernel
+ - Installation
+   - Installing to /lib/modules/5.15.0-126-generic/updates/dkms/
+
+nvidia-uvm.ko:
+Running module version sanity check.
+ - Original module
+   - No original module exists within this kernel
+ - Installation
+   - Installing to /lib/modules/5.15.0-126-generic/updates/dkms/
+
+nvidia-peermem.ko:
+Running module version sanity check.
+ - Original module
+   - No original module exists within this kernel
+ - Installation
+   - Installing to /lib/modules/5.15.0-126-generic/updates/dkms/
+
+depmod...
+Setting up xserver-xorg-video-nvidia-580-server (580.178.04-0ubuntu0.22.04.1) ...
+Setting up libnvidia-extra-580-server:amd64 (580.178.04-0ubuntu0.22.04.1) ...
+Setting up libnvidia-fbc1-580-server:amd64 (580.178.04-0ubuntu0.22.04.1) ...
+Setting up libnvidia-compute-580-server:amd64 (580.178.04-0ubuntu0.22.04.1) ...
+Setting up libnvidia-decode-580-server:amd64 (580.178.04-0ubuntu0.22.04.1) ...
+Setting up nvidia-utils-580-server (580.178.04-0ubuntu0.22.04.1) ...
+Setting up libnvidia-gl-580-server:amd64 (580.178.04-0ubuntu0.22.04.1) ...
+Setting up nvidia-compute-utils-580-server (580.178.04-0ubuntu0.22.04.1) ...
+Warning: The home dir /nonexistent you specified can't be accessed: No such file or directory
+Adding system user `nvidia-persistenced' (UID 114) ...
+Adding new group `nvidia-persistenced' (GID 122) ...
+Adding new user `nvidia-persistenced' (UID 114) with group `nvidia-persistenced' ...
+Not creating home directory `/nonexistent'.
+Setting up libnvidia-encode-580-server:amd64 (580.178.04-0ubuntu0.22.04.1) ...
+Setting up nvidia-driver-580-server (580.178.04-0ubuntu0.22.04.1) ...
+Setting up nvidia-driver-565-server (565.57.01-0ubuntu0.22.04.5) ...
+Processing triggers for man-db (2.10.2-1) ...
+Processing triggers for initramfs-tools (0.140ubuntu13.4) ...
+update-initramfs: Generating /boot/initrd.img-5.15.0-126-generic
+Processing triggers for libc-bin (2.35-0ubuntu3.8) ...
+NEEDRESTART-VER: 3.5
+NEEDRESTART-KCUR: 5.15.0-126-generic
+NEEDRESTART-KEXP: 5.15.0-126-generic
+NEEDRESTART-KSTA: 1
+NEEDRESTART-SVC: nvidia-dcgm.service

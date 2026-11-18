@@ -1,0 +1,25 @@
+E11-START 2026-11-18T17:10:38Z head=8db2712
+=== mode=raw ===
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights: 100%|██████████| 399/399 [00:00<00:00, 7806.91it/s]
+Loading weights:   0%|          | 0/58 [00:00<?, ?it/s]Loading weights: 100%|██████████| 58/58 [00:00<00:00, 8110.61it/s]
+[transformers] Calling `crop` with a positive value is deprecated and will be removed in version 5.18. Please use a negative integer to remove that number of tokens from the cache instead.
+CONFIG block_size=16 mask=151669 layers=[1, 9, 17, 25, 33]
+PROMPTS 4 from frozen_math500 (same set the engine runs)
+CONTEXTS 4 generated, first len=246
+[REF 0] identical=True ref=(1, 166) mine=(1, 166) tau=1.92 rounds=25
+  the reference accepts 1.92 tokens per round: at this level both loops are plain greedy decoding and agree without the drafter working
+REFERENCE_DEGENERATE: prompt convention or wiring is wrong, refusing to measure
+E11-raw-rc=1
+=== mode=chat ===
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights: 100%|██████████| 399/399 [00:00<00:00, 7885.22it/s]
+Loading weights:   0%|          | 0/58 [00:00<?, ?it/s]Loading weights: 100%|██████████| 58/58 [00:00<00:00, 8029.76it/s]
+[transformers] Calling `crop` with a positive value is deprecated and will be removed in version 5.18. Please use a negative integer to remove that number of tokens from the cache instead.
+CONFIG block_size=16 mask=151669 layers=[1, 9, 17, 25, 33]
+PROMPTS 4 from frozen_math500 (same set the engine runs)
+CONTEXTS 4 generated, first len=254
+[REF 0] identical=True ref=(1, 174) mine=(1, 174) tau=3.20 rounds=15
+[REF 1] identical=True ref=(1, 169) mine=(1, 169) tau=1.78 rounds=27
+  the reference accepts 1.78 tokens per round: at this level both loops are plain greedy decoding and agree without the drafter working
+REFERENCE_DEGENERATE: prompt convention or wiring is wrong, refusing to measure
+E11-chat-rc=1
+E11-ALL-DONE 2026-11-18T17:11:37Z

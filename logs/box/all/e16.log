@@ -1,0 +1,114 @@
+E16-START 2026-11-18T17:51:02Z head=8db2712
+=== math500 sweep ===
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights: 100%|██████████| 399/399 [00:00<00:00, 7316.73it/s]
+Loading weights:   0%|          | 0/58 [00:00<?, ?it/s]Loading weights: 100%|██████████| 58/58 [00:00<00:00, 8234.15it/s]
+[transformers] Calling `crop` with a positive value is deprecated and will be removed in version 5.18. Please use a negative integer to remove that number of tokens from the cache instead.
+CONFIG block_size=16 mask=151669 layers=[1, 9, 17, 25, 33]
+PROMPTS 32 from frozen_math500 (same set the engine runs)
+CONTEXTS 32 generated, first len=246
+[REF 0] identical=True ref=(1, 374) mine=(1, 374) tau=3.46 rounds=74
+[REF 1] identical=True ref=(1, 369) mine=(1, 369) tau=4.00 rounds=64
+REFERENCE_TAU mean=3.73 per prompt=[3.46, 4.0] floor=2.93 engine=5.86
+REFERENCE_OK mode=raw
+  prompt 8/32 done
+  prompt 16/32 done
+  prompt 24/32 done
+  prompt 32/32 done
+TAU b9:k9=4.38 b10:k9=4.35 b11:k9=4.32 b12:k9=4.33 b13:k9=4.29 b14:k9=4.28 b15:k9=4.30 b16:k9=4.41
+WROTE experiments/standalone/accept_math500_sweep.json rows=15594
+E16-math500-rc=0
+== vlc.py — experiments/standalone/accept_math500_sweep.json
+cells are the file's tau map (computed from rows where that key is missing); no value is interpolated past a block's drafted width.
+config: {"ar_len": 128, "block_size": 16, "layers": [1, 9, 17, 25, 33], "mask": 151669, "prompts": 32}
+
+[1] tau table — cell = mean tau_k(b) = E[min(accepted, k)]; rows = drafter block, columns = verify columns k; k > b is 'n/a (block < k)'
+   b              k=5              k=8              k=9             k=12             k=16
+  16            3.326            4.198            4.409            4.898            5.278
+  15            3.270            4.097            4.298            4.767  n/a (block < k)
+  14            3.240            4.081            4.284            4.747  n/a (block < k)
+  13            3.240            4.092            4.293            4.763  n/a (block < k)
+  12            3.259            4.123            4.328            4.810  n/a (block < k)
+  11            3.253            4.114            4.320  n/a (block < k)  n/a (block < k)
+  10            3.268            4.143            4.355  n/a (block < k)  n/a (block < k)
+   9            3.277            4.165            4.381  n/a (block < k)  n/a (block < k)
+   8            3.278            4.192  n/a (block < k)  n/a (block < k)  n/a (block < k)
+  k = b + 1 is a real ceiling, not a truncated block: 'accepted' counts the target's correction token, so b=9 commits up to 10 tokens; [2] reads tau_9(9) = 4.381 (source: tau), while the table leaves that cell 'n/a (block < k)'.
+
+[2] decisive contrast at k=9: tau_9(b=16) vs tau_9(b=9)
+  table cells   tau_9(16) = 4.409   tau_9(9) = 4.381   ratio = 1.006
+  paired on (prompt, ctx_len) present in both blocks: 32 prompts
+  paired ratio  = 1.018   95% CI [0.989, 1.049]   (10000 resamples, random.Random(seed=0), percentile)
+  per-prompt    wide>narrow 20, tie 0, wide<narrow 12
+
+[3] cost model — flat verify (verify medians move 0.000 from 9 to 16 columns)
+  verify is memory-bound at this batch: columns are free, so a round costs what it cost. Pricing columns from the engine instead (c=32, 9 vs 17 columns, 30.31 vs 50.74 ms) would flatter the proposal and still not clear the tau bar.
+  the two blocks are timed at different column counts, so the marginal cost of a column is measured, not assumed: slope = -0.000001 s/column
+  b=16: median draft_s = 0.00647   median verify_s = 0.04013   median columns = 16
+  b=9 : median draft_s = 0.00645   median verify_s = 0.04014   median columns = 9
+  round(16,9) = 0.04660 s   round(9,9) = 0.04658 s (slope model; proportional would give 0.04658 s)
+  predicted tok/s ratio (16,9)/(9,9) = tau factor 1.018 x cost factor round(9,9)/round(16,9) 1.000 = 1.018
+  split of the log ratio: acceptance +98.2%, cost +1.8% of the gain
+
+[4] what would falsify this — conditions evaluated on this file, not asserted
+  needs tau_9(16)/tau_9(9) >= 1.05; observed 1.018 -> fails
+  needs predicted tok/s ratio >= 1.10; observed 1.018 -> fails
+  at the measured cost factor 1.000, the tau ratio would have to reach 1.100 to clear 1.10 (1.10 / 1.000)
+  verdict: NOT SUPPORTED  (failed: tau ratio, predicted tok/s)
+E16-math500-vlc-rc=0
+=== mtbench sweep ===
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights: 100%|██████████| 399/399 [00:00<00:00, 11475.09it/s]
+Loading weights:   0%|          | 0/58 [00:00<?, ?it/s]Loading weights: 100%|██████████| 58/58 [00:00<00:00, 8226.07it/s]
+[transformers] Calling `crop` with a positive value is deprecated and will be removed in version 5.18. Please use a negative integer to remove that number of tokens from the cache instead.
+CONFIG block_size=16 mask=151669 layers=[1, 9, 17, 25, 33]
+PROMPTS 32 from frozen_mtbench (same set the engine runs)
+CONTEXTS 32 generated, first len=183
+[REF 0] identical=True ref=(1, 311) mine=(1, 311) tau=2.10 rounds=122
+[REF 1] identical=True ref=(1, 435) mine=(1, 435) tau=2.49 rounds=103
+REFERENCE_TAU mean=2.29 per prompt=[2.1, 2.49] floor=2.04 engine=4.08
+REFERENCE_OK mode=raw
+  prompt 8/32 done
+  prompt 16/32 done
+  prompt 24/32 done
+  prompt 32/32 done
+TAU b9:k9=3.23 b10:k9=3.21 b11:k9=3.18 b12:k9=3.16 b13:k9=3.16 b14:k9=3.15 b15:k9=3.18 b16:k9=3.31
+WROTE experiments/standalone/accept_mtbench_sweep.json rows=21735
+E16-mtbench-rc=0
+== vlc.py — experiments/standalone/accept_mtbench_sweep.json
+cells are the file's tau map (computed from rows where that key is missing); no value is interpolated past a block's drafted width.
+config: {"ar_len": 128, "block_size": 16, "layers": [1, 9, 17, 25, 33], "mask": 151669, "prompts": 32}
+
+[1] tau table — cell = mean tau_k(b) = E[min(accepted, k)]; rows = drafter block, columns = verify columns k; k > b is 'n/a (block < k)'
+   b              k=5              k=8              k=9             k=12             k=16
+  16            2.739            3.201            3.310            3.553            3.741
+  15            2.659            3.079            3.178            3.396  n/a (block < k)
+  14            2.632            3.051            3.149            3.361  n/a (block < k)
+  13            2.630            3.057            3.160            3.380  n/a (block < k)
+  12            2.633            3.058            3.162            3.388  n/a (block < k)
+  11            2.638            3.078            3.183  n/a (block < k)  n/a (block < k)
+  10            2.649            3.100            3.208  n/a (block < k)  n/a (block < k)
+   9            2.656            3.118            3.229  n/a (block < k)  n/a (block < k)
+   8            2.684            3.170  n/a (block < k)  n/a (block < k)  n/a (block < k)
+  k = b + 1 is a real ceiling, not a truncated block: 'accepted' counts the target's correction token, so b=9 commits up to 10 tokens; [2] reads tau_9(9) = 3.229 (source: tau), while the table leaves that cell 'n/a (block < k)'.
+
+[2] decisive contrast at k=9: tau_9(b=16) vs tau_9(b=9)
+  table cells   tau_9(16) = 3.310   tau_9(9) = 3.229   ratio = 1.025
+  paired on (prompt, ctx_len) present in both blocks: 32 prompts
+  paired ratio  = 1.052   95% CI [1.016, 1.094]   (10000 resamples, random.Random(seed=0), percentile)
+  per-prompt    wide>narrow 25, tie 0, wide<narrow 7
+
+[3] cost model — flat verify (verify medians move 0.000 from 9 to 16 columns)
+  verify is memory-bound at this batch: columns are free, so a round costs what it cost. Pricing columns from the engine instead (c=32, 9 vs 17 columns, 30.31 vs 50.74 ms) would flatter the proposal and still not clear the tau bar.
+  the two blocks are timed at different column counts, so the marginal cost of a column is measured, not assumed: slope = 0.000002 s/column
+  b=16: median draft_s = 0.00630   median verify_s = 0.03880   median columns = 16
+  b=9 : median draft_s = 0.00628   median verify_s = 0.03878   median columns = 9
+  round(16,9) = 0.04509 s   round(9,9) = 0.04505 s (slope model; proportional would give 0.04505 s)
+  predicted tok/s ratio (16,9)/(9,9) = tau factor 1.052 x cost factor round(9,9)/round(16,9) 1.001 = 1.053
+  split of the log ratio: acceptance +98.4%, cost +1.6% of the gain
+
+[4] what would falsify this — conditions evaluated on this file, not asserted
+  needs tau_9(16)/tau_9(9) >= 1.05; observed 1.052 -> passes
+  needs predicted tok/s ratio >= 1.10; observed 1.053 -> fails
+  at the measured cost factor 1.001, the tau ratio would have to reach 1.099 to clear 1.10 (1.10 / 1.001)
+  verdict: NOT SUPPORTED  (failed: predicted tok/s)
+E16-mtbench-vlc-rc=0
+E16-ALL-DONE 2026-11-18T18:25:43Z
