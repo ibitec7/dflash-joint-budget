@@ -29,9 +29,36 @@ afterwards; if a threshold is wrong, the report says it was wrong and reports th
 | **H2** | Truncating to 9 columns does not destroy acceptance | whether the gain survives the tail | `τ(A1) ≥ 7.2` at c=32 (≤10% loss vs 8.01) | truncation costs more acceptance than the model assumed; recompute with the measured `τ(L)` and report the corrected gain, not the projection |
 | **H3** | The method beats DFlash end-to-end | the headline claim | `tok/s(A1)/tok/s(A0) ≥ 1.15` at c=32 | mechanism exists but the gain is under the useful threshold; report the measured number and the reason (verification share, overhead, padding) |
 | **H4** | Verify length dominates draft width | the project's novel claim | `tok/s(A1) ≥ 1.10 · tok/s(A3)` at c=32 | the two knobs are equivalent; the dominance claim is withdrawn and the report presents them as equal-cost alternatives |
+| **H4 note (2026-11-18, before any VLC run)** | as scored, A1 and A3 were the same configuration | implementation | A1 ran `speculative_num_draft_tokens=9`, which sets the DRAFTER's block to 9 as well (`dflash_worker_v2.py:511-523`, `set_block_size(self.block_size)`), so the arm was block-9/verify-9 against block-8/verify-8. The measured 0.990 is a property of that coupling, not of the two knobs | H4 is re-scored as **INVALID-BY-CONFOUND**, not FAIL. The VLC test is re-specified below and its result replaces this row |
 | **H5** | The method costs nothing at batch 1 | deployability | `tok/s(A1)/tok/s(A0) ≥ 0.98` at c=1 | per-round selection overhead is real; report it as the price of the method |
 | **H6** | Output is unchanged | losslessness | `exact_match_ar(A1) ≥ 0.99` | the implementation changes model behaviour; the run is invalid and the bug is reported, not the result |
 | **H7** | The controller beats the best fixed length | whether adaptivity is worth anything | `tok/s(A4) ≥ 1.05 · max_L tok/s(fixed L)` at c=32 | a fixed length is enough; the adaptive rule is reported as unnecessary complexity. **Conditional:** A4 needs E0 to confirm the backend exposes a per-request verify length. If it does not, H7 is N/A, not failed, and the report says the adaptive arm was unimplementable on this backend |
+
+## 2b. H4-VLC, the test that actually separates the knobs (pre-registered, not yet run)
+
+The drafter's block attention is **bidirectional** (`dflash.py:41 is_causal = False`, and the
+drafting forward at `:244` passes `is_causal=False`), so the proposal at position i is computed
+with the whole block in view: block 16 and block 9 produce different proposals at every position,
+not just a longer suffix. Truncation is therefore a real alternative and not a relabelling of the
+block-width knob.
+
+**Definition.** VLC(b, k) = draft with block b, verify only the first k proposals.
+`τ_k(b) = E[min(a, k)]` where `a` is the accepted prefix of the block-b draft.
+
+**Pre-registered test.** On identical contexts (AR-generated prefixes, so every arm sees the same
+input tokens and the same target hidden states), measure `τ_k(16)` and `τ_k(9)` for k = 1..9.
+
+| H4-VLC | statement | threshold | if it fails |
+|---|---|---|---|
+| acceptance | a wider draft improves first-k acceptance | `τ_9(16) ≥ 1.05 · τ_9(9)` | the extra 7 draft positions buy nothing in the verified prefix; VLC is refuted with a mechanism, and block-width control is the method to report |
+| end-to-end | the acceptance gain beats the extra drafter cost | `tok/s(VLC 16→9) ≥ 1.10 · tok/s(A3 block 8)` at c=32 | acceptance gain exists but does not pay for the wider drafter pass; report the break-even width |
+
+Cost model the second row tests, with all terms measurable:
+`cost(b,k) = drafter(b) + target(k+1)` and VLC wins iff
+`τ_k(16)/τ_k(9) > cost(16,k)/cost(9,k)`.
+
+**Falsification is the point:** if `τ_9(16) < 1.05 · τ_9(9)`, the honest report says the verify-length
+knob is dominated by the block-width knob on a bidirectional-block drafter, and that is a finding.
 
 ## 3. Decision matrix
 
