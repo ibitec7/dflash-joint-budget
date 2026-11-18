@@ -23,7 +23,12 @@ import tempfile
 from pathlib import Path
 
 KS = (5, 8, 9, 12, 16)
-WIDE, NARROW, K_STAR = 16, 8, 9
+# A round commits up to its verify-column count, so harness `columns` == engine
+# `verify_columns` == draft width + 1. D8 as the engine runs it is draft_width 8 / verify 9
+# (results/A3_math500_c32_s0.json), which is `--narrow 9` here. `--narrow 8` is a 7-draft /
+# 8-column arm that no engine arm corresponds to; it is reported for completeness and is not
+# like-for-like, because it verifies one column fewer than the treatment.
+WIDE, NARROW, K_STAR = 16, 9, 9
 TAU_BAR, TOK_BAR = 1.05, 1.10
 RESAMPLES, SEED = 10_000, 0
 ABSENT, NA = "absent", "n/a (block < k)"
@@ -232,7 +237,9 @@ def analyse(data: dict) -> dict:
         out["round_wide"] = (_dw + _vw) if None not in (_dw, _vw) else None
         out["round_narrow"] = (_dn + _vn) if None not in (_dn, _vn) else None
         out["round_narrow_prop"] = out["round_narrow"]
-        out["cost_factor"] = (out["round_wide"] / out["round_narrow"]
+        # tok/s ratio = (tau treatment / tau control) x (round control / round treatment),
+        # so the cost factor is control-over-treatment: > 1 favours the treatment.
+        out["cost_factor"] = (out["round_narrow"] / out["round_wide"]
                               if out["round_wide"] and out["round_narrow"] else None)
         out["cost_bracket"] = [out["cost_factor"]] if out["cost_factor"] else []
         out["tok_ratio"] = (out["tau_factor"] * out["cost_factor"]

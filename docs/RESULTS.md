@@ -258,9 +258,18 @@ throws away, and capping at 9 gives up 5.278 -> 4.409, **16.5%**.
 | **paired ratio on (prompt, ctx_len)** | **1.018, 95% CI [0.989, 1.049]** | `vlc.py` [2], 10000 resamples, seed 0 |
 | per-prompt wide>narrow / tie / wide<narrow | 20 / 0 / 12 | `vlc.py` [2] |
 | sign test on the 32 discordant prompts | p = 0.215 | binomial, two-sided |
-| cost factor round(9,9)/round(16,9) | 1.005 | medians 45.08 / 45.29 ms |
-| predicted tok/s ratio | 1.023 | tau x cost |
+| cost factor round(9,9)/round(16,9) | 0.995 | medians 45.07 / 45.29 ms, control over treatment |
+| predicted tok/s ratio | 1.013 | tau x cost = 1.018 x 0.995 |
 | bars | tau >= 1.05, tok/s >= 1.10 | `docs/EXPERIMENTS.md` H4-VLC |
+
+**Which arm is the control, stated once.** A round commits up to its verify-column count, so a
+harness `columns` value equals the engine's `verify_columns` and equals draft width + 1. The
+registered control D8 is the engine arm A3: `draft_width: 8, verify_columns: 9`
+(`results/A3_math500_c32_s0.json`), which is `--narrow 9` here. A 7-draft / 8-column arm exists in
+the sweep and is *not* the registered control; measured against it the tau ratio is 1.073
+[1.040, 1.104], which clears the tau bar, and the predicted tok/s ratio is 1.073 x round(8)/round(9)
+= 1.076, which does not. Reported so the choice is visible: the verdict is stable under both
+readings, and it rests on the tok/s bar under the 8-column one.
 
 Both bars fail. The 95% CI excludes a true ratio of 1.05, and the direction is not significant on
 its own (p = 0.215). Under the pre-committed collapse rule this is the negative result the rule was
@@ -287,6 +296,45 @@ The engine's integration differs from the checkpoint's reference loop in how tar
 are carried across rounds, and this harness inherits the reference loop's convention. Both arms sit
 inside one instrument on byte-identical contexts, so the ratio travels; the absolute level does not,
 and no sentence here compares this tau to a paper tau.
+
+## F16. What the knob is worth against the arm everyone runs: 1.34x over block 16, parity with block 9 (COMPOSED)
+
+COMPOSED, NOT END-TO-END: acceptance comes from the batch-1 harness and round cost from the
+batch-32 engine records. One end-to-end run of draft 16 with a 9-column verify window would settle
+it, and this backend cannot launch it, because one flag sets both the drafter block and the verify
+width (`Correction 2026-11-19`). `scripts/vlc_tokps.py` prints every factor with its file:key:
+
+| target | acceptance factor | round-cost factor | composed | 95% CI |
+|---|---|---|---|---|
+| A0 (block 16 / 17 columns, as shipped) | 0.804 paired, 0.835 pooled | 1.674 | **1.345 paired, 1.398 pooled** | [1.291, 1.406] |
+| A1 (= D8: 8 drafts / 9 columns) | 1.018 | 0.995 | **1.013** | [0.989, 1.049] |
+
+Sources: `accept_math500.json` `tau` for the acceptance cells and `rows` for the paired reading;
+`results/A0_math500_c32_s0.json:ms_per_round_p50` = 50.736 ms and
+`results/A1_math500_c32_s0.json:ms_per_round_p50` = 30.309 ms for the cost factor. Paired means
+per-prompt tau ratios, CI from 10000 bootstrap resamples of prompts.
+
+**The claim this licenses.** Truncating the shipped block-16 drafter at nine verify columns keeps
+80% of its committed tokens per round and cuts the round to 60% of its cost, which composes to
+**1.34x** over the block-16 arm at c=32 (paired; 1.40x on the pooled cells) and is bit-identically
+decodable, since only the verify window changes. **The claim it does not license:** that this beats
+changing the block size. It does not: block 8 with 9 columns measures 1.318x (deterministic), 1.498x
+(s0), 1.409x (s1), 1.409x (s2) and 1.364x (64 prompts) over the same arm, and VLC sits at parity
+with it (1.013, CI [0.989, 1.049]).
+
+**How much the composition can be trusted, measured rather than assumed.** The same model run on
+the engine's own two arms reproduces the measured A1/A0 throughput to 0.7% with default kernels
+(0.889 tau x 1.674 cost = 1.487 against 1.498 measured) and over-predicts by 14% with deterministic
+kernels (0.853 x 1.765 = 1.506 against 1.318 measured): with CUDA graphs the round split stops
+being a valid cost model. So the 1.345 point estimate carries an unknown systematic of that size,
+and the defensible interval for VLC over A0 is roughly **1.18x to 1.41x**, not 1.345x to four
+figures. Both ends clear the 1.10 bar; neither approaches the 1.67x that the cost ratio alone would
+suggest, because the acceptance loss is real and lands on the same side.
+
+**Third instrument, same answer.** The engine, with both terms measured in one run and no
+composition at all, gives A1/A0 = tau 0.889 x round 1.674 = 1.487 predicted against 1.498 measured
+(default kernels). The knob the paper nominates and the knob proposed here are the same knob, and
+the engine says so without any harness in the loop.
 
 ## Verdict from the pre-registered rules
 
