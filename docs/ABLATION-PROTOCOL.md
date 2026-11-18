@@ -22,7 +22,7 @@ not merely from the pages read. This file specifies what to run; it reports no r
 | Fig. 3 (p.3) | **draft latency only** vs #draft tokens {4,8,16}, 1/3/5-L + EAGLE-3 1-L | — | not measured | not measured | single stream | NOT STATED | — |
 | T11 (p.12) | model scale, SGLang | c=8 only | 6.0–9.1 | 1.2×–3.9× | 8 | 1× B200 | NOT STATED |
 | T12 (p.12) | vLLM, Qwen3.5-9B | 849→9836 tok/s | not reported | 4.0× → 1.9× (c=32) | 1/8/16/32 | NOT STATED | NOT STATED |
-| p.7 §5.5 preamble | scope of every ablation | "single H200 GPU with greedy decoding, except those evaluated on SGLang" | — | — | **none above c=1** | H200 | — |
+| p.7 §5.5 preamble | scope of every ablation | "single H200 GPU with greedy decoding, except those evaluated on SGLang" | — | — | c=1 for the H200 ablations; c=1-32 for the SGLang and vLLM rows (T3, T5, T11, T12) | H200 / B200 | — |
 | p.9 §5.5.4 | position, not an experiment | "large blocks can increase verification cost under compute-bound settings (e.g., large batch sizes); reducing the block size … can therefore yield better overall speedup. We leave adaptive block-size scheduling to future work." | — | — | — | — | — |
 
 The last two rows are the whole opening: they name our mechanism, prescribe the *wider* knob for it,
@@ -78,10 +78,10 @@ a second draft pass, which is a *different algorithm* and must be labelled as on
 
 | Axis | Values | Why exactly these |
 |---|---|---|
-| verify columns k | {5, 9, 13, 17} at b=16; {5, 9} at b=8 | 9 is the matched cell, 17 the published one, 5 and 13 give the slope of τ(k) and ms_round(k) — the mechanism claim |
+| verify columns k | **planned** {5, 9, 13, 17} at b=16 and {5, 9} at b=8. **Executed** (2026-11-18, RESULTS F17): every k from 1 to the block's own column count, at blocks {8,9,12,16}, then a nine-block sweep {8..16}; 15594 rounds, `experiments/standalone/accept_math500_sweep.json`. k=13 and k=17 were not run: the standalone loop's widest block is 16 columns, and one pass yields every k at once, which makes a hand-picked k list redundant | 9 is the matched cell and the registered control arm; 16 is the widest window the reference loop can verify; every k in between gives the slope of tau(k) for free |
 | draft width b | {8, 16}, **same b16 checkpoint run at BS 8** | T8 (p.8) shows b16→b8 generalizes and b8→b16 does not; a separately trained b8 checkpoint would confound width with capacity |
 | concurrency c | {1, 8, 16, 32} | matches T3/T5/T12 so the batch regime is comparable; our crossover sits between 8 and 16 (RESULTS F3) |
-| prompts / seeds | frozen MATH-500, 64 at c=32, 32 elsewhere; 3 seeds on A0, VLC(16,8), D8, AR at c=32 | EXPERIMENTS §4 rule 4, not to be silently dropped |
+| prompts / seeds | **planned** 64 at c=32, 32 elsewhere, with 3 seeds on A0, VLC, D8 and AR. **Executed for the acceptance cell** (RESULTS F15, F17): 32 frozen prompts, one pass per block, no seed sweep; the engine records carry 2 default-kernel seeds, 1 deterministic seed and a 64-prompt pass (results_s/, results_p64/); the 64-prompt acceptance pass was not run | EXPERIMENTS §4 rule 4, not to be silently dropped. The acceptance verdict rests on a paired per-prompt test, which is why 32 prompts settle the sign and not the fourth digit |
 
 Six arms × four concurrencies = 24 runs + 8 repeat seeds at c=32. Fewer leaves the headline at one
 seed and one concurrency — the shape of claim T8 itself makes.
@@ -111,13 +111,13 @@ Report the identity per cell (p.3 Eq. 1): η = τ / (T_draft + T_verify), with `
 `T_verify(k)` measured separately — one nsys trace per arm at c=32 (EXPERIMENTS §4 rule 6). The claim
 is that the two terms answer to *different* knobs; end-to-end tok/s alone is correlational and a
 reviewer will say so. Decision rule unchanged (EXPERIMENTS §2b): pass if `tok/s(VLC(16,8)) ≥ 1.10 ×
-tok/s(D8)` at c=32 with `τ_9(16) ≥ 1.05 × τ_9(9)`; fail → report the break-even width.
+tok/s(D8)` at c=32 with `τ_9(16) ≥ 1.05 × τ_9(D8)`, D8 = 8 drafts into 9 verify columns (`--narrow 9`, `b9_k9` = 4.381); fail → report the break-even width. Run 2026-11-18: 1.018 and 1.013, both bars fail (RESULTS F15).
 
 ## 4. What would make the claim fatally confounded
 
 | # | Trap | Why fatal | Guard |
 |---|---|---|---|
-| T1 | **Backend coupling**: the "VLC" arm set via `speculative_num_draft_tokens=9`, which also sets the drafter block to 9 | the cell becomes (9,9) vs (8,9): one column apart, no wide draft. Exactly what produced 0.990 (RESULTS F5) | assert at runtime that drafter attention spans 16 positions and target logits span 9; log both counters |
+| T1 | **Backend coupling**: the "VLC" arm set via `speculative_num_draft_tokens=9`, which also sets the drafter block to 9 | the cell becomes (9,9) vs (8,9): one column apart, no wide draft. Exactly what produced the 0.998 (default kernels) and 0.990 (deterministic) repeat pair (RESULTS F5) | assert at runtime that drafter attention spans 16 positions and target logits span 9; log both counters |
 | T2 | **Unequal target passes per accepted token** | a narrow arm needing more rounds pays more target passes; tok/s hides it | report counted target forwards per generated token, per arm |
 | T3 | **Cross-machine comparison**: our c=32 VLC against T8's batch-1 H200 row (3.87×/5.09) | different GPU, batch, prompts, kernel mode — and load regime, the variable under test | all ratios internal to our grid; T8 an anchor, never a denominator |
 | T4 | **Mismatched τ ceilings**: VLC(16,8) caps at 9 | won trivially by whichever arm has the higher cap | ceilings equal by construction, printed per arm |

@@ -499,6 +499,7 @@ def figure(data: dict, a: dict, path: str | Path,
     ax.legend(fontsize=6.8, frameon=False, loc="lower right")
     ax.grid(True, axis="y", color="0.9", lw=0.6)
     ax.text(K + 0.35, 1.15, "columns a 9-wide window discards", fontsize=6.2, color="0.4")
+    ax.set_ylim(0, None)  # a truncated tau axis exaggerates a 3% difference
 
     # (b) round cost against columns, from both instruments.
     ax = axes[1]
@@ -526,6 +527,7 @@ def figure(data: dict, a: dict, path: str | Path,
                         xytext=(-6, 7), ha="right", fontsize=6.6, color=COLORS["A0"])
     ax.set_xlabel("verify columns")
     ax.set_ylabel("ms per round")
+    ax.set_ylim(0, None)  # same reason: 30-51 ms on a truncated axis reads as a cliff
     ax.set_title("cost: only the engine prices a column", fontsize=9.0)
     ax.legend(fontsize=6.6, frameon=False, loc="lower right")
     ax.grid(True, axis="y", color="0.9", lw=0.6)

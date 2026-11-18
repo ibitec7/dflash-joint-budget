@@ -1,6 +1,6 @@
 # Results
 
-We re-measure DFlash (arXiv 2602.06036, ICML 2026) at serving batch on one A100, reproduce its own block-width ablation to within 7%, and specify the single unmeasured cell that decides whether verify-window truncation is a knob separate from draft-block width. Every number carries its source; the one cell that does not exist yet is marked `TO BE MEASURED` with the key it will come from.
+We re-measure DFlash (arXiv 2602.06036, ICML 2026) at serving batch on one A100, reproduce its own block-width ablation to within 7.4%, and specify the single unmeasured cell that decides whether verify-window truncation is a knob separate from draft-block width. Every number carries its source; the one cell that does not exist yet is marked `TO BE MEASURED` with the key it will come from.
 
 ## 1. Setup
 
@@ -30,12 +30,12 @@ DFlash reports 2.8x at c=32 on a B200 (ABLATION-PROTOCOL.md §1, T3 p.7). Here, 
 | c=1, default | 88.91 | 301.44 | **3.39x** | 15.41 | (results/A0_math500_c1_s0.json: tok_per_s) |
 | c=32, default, s0 | 2451.1 | 2245.11 | **0.916x** | 50.74 | (results/A0_math500_c32_s0.json: tok_per_s) |
 | c=32, default, s1 | 2460.8 | 2234.5 | **0.908x** | — | (RESULTS.md F12) |
-| c=32, default, s2 | 2461.1 | 2461.8 | **1.002x** | — | (RESULTS.md F12) |
+| c=32, default, s2 | 2461.1 | 2461.8 | **1.000x** | — | (RESULTS.md F12) |
 | c=32, deterministic | 993.58 | 1674.29 | **1.685x** | 73.04 | (results_det/A0_math500_c32_s0.json: tok_per_s) |
 
 The collapse is not a drafter problem. A0's round time grows 3.29x from c=1 to c=32 (15.41 to 50.74 ms) while the 9-column arm's grows 2.01x (15.05 to 30.31 ms): the verify pass filling the batch, not slower drafting (results/A0_math500_c1_s0.json, results/A1_math500_c32_s0.json: ms_per_round_p50).
 
-The reportable quantity is the paired ratio, not the absolute. Across two default-kernel seeds the absolutes move ~10% (A0 2234.5 to 2461.8 tok/s; A1 3149.0 to 3467.9) while A1/A0 stays width-shaped: 1.498 (s0), 1.409 (s1), 1.409 (s2), 1.364 at 64 prompts, 1.318 deterministic, so quote the range 1.32-1.50 rather than the pair that agrees (RESULTS.md F12). AR is not a stable denominator either: A0 lands on both sides of parity with it (0.908x s1, 1.002x s2). So 1.685x is quotable only with "deterministic kernels" attached, and 0.908x only with "default kernels, seed 1".
+The reportable quantity is the paired ratio, not the absolute. Across two default-kernel seeds the absolutes move ~10% (A0 2234.5 to 2461.8 tok/s; A1 3149.0 to 3467.9) while A1/A0 stays width-shaped: 1.498 (s0), 1.409 (s1), 1.409 (s2), 1.364 at 64 prompts, 1.318 deterministic, so quote the range 1.32-1.50 rather than the pair that agrees (RESULTS.md F12). AR is not a stable denominator either: A0 sits at or below parity with it across the default seeds (0.908x s1, 1.000x s2) and at 1.685x with deterministic kernels. So 1.685x is quotable only with "deterministic kernels" attached, and 0.908x only with "default kernels, seed 1".
 
 ## 3. What we can already claim: the block-width effect at c=32
 
@@ -58,7 +58,7 @@ This is DFlash's Table 8 diagonal run at batch 32 instead of single stream, and 
 
 Sources: paper cells from ABLATION-PROTOCOL.md §1 (T8, p.8); our cells from results_det/A0_math500_c1_s0.json and results_det/A1_math500_c1_s0.json (tau); deltas from RESULTS.md F10. Different GPU class, concurrency and kernel mode, so this is not a bit-level reproduction and is not quoted as one. It shows the paper's width effect (-19.6%) is visible here (-14.7%), and that is the effect the verify-window cell has to beat.
 
-None of this licenses a statement about a verify window: no arm ever drafted wider than it verified. Under the pre-registered rules the verdict is MECHANISM ONLY — H1 0.566 PASS, H3 1.318 PASS, H6 1.0000 PASS, H2 tau 5.00 against a 7.2 bar FAIL, H4 0.990 FAIL and re-scored INVALID-BY-CONFOUND, H5 0.798 at c=1 FAIL, H7 N/A (no per-request verify length) (RESULTS.md, Verdict; EXPERIMENTS.md §2).
+None of this licenses a statement about a verify window: no arm ever drafted wider than it verified. Under the pre-registered rules the verdict is MECHANISM ONLY: H1 0.566 PASS, H3 1.318 PASS, H6 1.0000 PASS, H2 tau 5.00 against a 7.2 bar FAIL, H4 0.990 FAIL and re-scored INVALID-BY-CONFOUND, H5 0.798 at c=1 FAIL, H7 PASS as printed by `decide.py` for an A4 arm that does not exist (RESULTS.md, Verdict; EXPERIMENTS.md §2). The H7 `PASS` is a tool bug: the code passes the string `"NA"` as a truthy value, so H7 is really NA and no adaptive claim is made.
 
 ## 4. The cell that decides the proposal
 
@@ -75,15 +75,17 @@ The cell cannot be expressed on SGLang 0.5.23: `speculative_num_draft_tokens` se
 | `tau_9(9)` | **4.381** | `tau["b9_k9"]` |
 | tau ratio, paired on (prompt, ctx_len) + 95% CI | **1.018 [0.989, 1.049]** | `vlc.py` [2] |
 | per-prompt wins / ties / losses | **20 / 0 / 12**, sign test p = 0.215 | `vlc.py` [2] |
-| cost factor `round(9,9)/round(16,9)` | 1.005 (45.08 / 45.29 ms medians) | `vlc.py` [3] |
-| predicted tok/s ratio | 1.023 | `vlc.py` [3] |
+| cost factor `round(9,9)/round(16,9)` | 0.995 (45.07 / 45.29 ms medians, control over treatment) | `vlc.py` [3] |
+| predicted tok/s ratio | 1.013 (1.018 x 0.995) | `vlc.py` [3] |
 | verdict | **NOT SUPPORTED** — both bars fail | `vlc.py` [4] |
 
 The tau table behind those two cells is the finding (RESULTS.md F15): up to 8 columns a 16-slot
-block and an 8-slot block accept within 2% of each other (4.198 vs 4.192 at k=8), and the width
-advantage appears only above 8 columns (5.278 against 4.192, +25.9%, at k=16). Truncating at 9
-therefore gives up 16.5% of the wide block's committed tokens and buys 1.018x over the narrow
-control, inside its own CI. The estimate is a second benchmark pending (`mtbench`, same protocol):
+block and an 8-slot block accept within 1.5% of each other (4.198 vs 4.192 at k=8, 3.326 vs 3.278
+at k=5), and the width advantage appears only above 8 columns, where the 8-slot block has no cell
+at all. So 5.278 at 16 columns against 4.192 at 8 columns (+25.9%) is a cross-k contrast, not an
+equal-k one; the equal-k gains for b16 are +2.1% at k=5, +1.8% at k=8, +0.6% at k=9 and +1.8% at
+k=12. Truncating at 9 therefore gives up 16.5% of the wide block's committed tokens and buys
+1.018x over the narrow control, inside its own CI. The estimate is a second benchmark pending (`mtbench`, same protocol):
 it replicates or it does not, and it cannot change the math500 verdict.
 
 Nothing here is estimated or carried over from the block-k arms; those sit inside 5% of each other and that is a warning about the prior, not a substitute for the measurement (NOVELTY.md §3).
@@ -92,11 +94,11 @@ Bars fixed before the run: PASS needs `tau_9(16) >= 1.05 * tau_9(8)` and `tok/s(
 
 ## 5. Threats to validity
 
-1. **The arm labels were wrong, and the correction is part of the record.** `src/serve.py` passed only `speculative_num_draft_tokens = verify_columns - 1`, so every arm launched with a block equal to its submitted length; A1's declared "draft 16 / verify 9" executed as draft 8 / verify 9 (RESULTS.md, Correction 2026-11-19). Every pre-correction sentence attributing an effect to a verify window is retracted, and A1-vs-A3 is a 1.0% noise floor, not a durability result.
+1. **The arm labels were wrong, and the correction is part of the record.** `src/serve.py` passed only `speculative_num_draft_tokens = verify_columns - 1`, so every arm launched with a block equal to its submitted length; A1's declared "draft 16 / verify 9" executed as draft 8 / verify 9 (RESULTS.md, Correction 2026-11-19). Every pre-correction sentence attributing an effect to a verify window is retracted, and A1-vs-A3 is a 1.0% noise floor with deterministic kernels (0.2% with default kernels), not a durability result.
 2. **Kernel mode is not portable.** Absolute throughput moves 2.48x by design, A0's position against AR flips sign (1.685x deterministic, 0.908x default), and tau differs for one configuration (5.861 deterministic, 5.510 default) because batch-invariant kernels change argmax ties (RESULTS.md F11). Mixing modes in one table is forbidden; the instrument times a transformers loop, not the engine.
 3. **Seed-to-seed movement.** tau is not stable across seeds for one configuration (A0: 5.861 deterministic, 5.510 s1, 5.730 s2) and absolutes move ~10% with it (RESULTS.md F12). A 5% tau effect is within what these seeds do.
 4. **One benchmark, not two.** Every record in `results/` and `results_det/` is MATH-500. A frozen MT-Bench set exists (`data/frozen_mtbench.json`, 200 prompts from an 80-prompt pool, repeated 3x) but no arm ran on it, so nothing here generalises to open-ended chat.
-5. **Prompt count.** 32 prompts at most concurrencies, 64 at c=32, against a 200-prompt pool (`data/frozen_math500.json: n`). Our 5.5–5.7 tau at 17 columns sits against the paper's 8.01 (RESULTS.md F7), a prompt-subset, output-length and GPU gap; no cross-paper tau comparison is made.
+5. **Prompt count.** 32 prompts at most concurrencies, 64 at c=32, against a 200-prompt pool (`data/frozen_math500.json: n`). Our 5.5–5.7 tau at 17 columns with default kernels (5.861 with deterministic kernels) sits against the paper's 8.01 (RESULTS.md F7), a prompt-subset, output-length and GPU gap; no cross-paper tau comparison is made.
 6. **Single GPU class.** One A100 80GB PCIe against the paper's B200 (T3) and H200 (T8). The collapse and the recovery are properties of a compute-bound pass, so their magnitudes are hardware-dependent even where the sign is not.
 7. **The treatment cell needs an instrument whose equivalence gate could fail.** `run_accept.py` raises `SystemExit("REFERENCE_MISMATCH")` on any token divergence from `spec_generate`, and times draft and verify in a standalone transformers loop rather than inside SGLang. If the gate fails the cell is unmeasured, not negative; if it passes, the cost terms still carry a runtime change relative to the engine ratios in §2 and §3 (ABLATION-PROTOCOL.md §3.4).
 

@@ -24,7 +24,7 @@ counts is `docs/EXPERIMENTS.md`; the verdict is `scripts/decide.py`.
 | 1 | 88.9 | 301.4 | 259.1 | **3.39x** | 2.91x | 0.86 | 15.41 | 15.05 | 0.98 |
 | 4 | 348.5 | 787.9 | 772.7 | 2.26x | 2.22x | 0.98 | 16.71 | 16.14 | 0.97 |
 | 8 | 684.3 | 1390.9 | 1327.8 | 2.03x | 1.94x | 0.95 | 19.41 | 16.94 | 0.87 |
-| 16 | 1324.5 | 1779.5 | 2363.9 | 1.34x | 1.79x | **1.33** | 29.36 | 19.58 | 0.67 |
+| 16 | 1324.5 | 1779.5 | 2363.9 | 1.34x | 1.78x | **1.33** | 29.36 | 19.58 | 0.67 |
 | 32 | 2451.1 | 2245.1 | 3363.7 | **0.92x** | 1.37x | **1.50** | 50.74 | 30.31 | 0.60 |
 
 Replication at c=32 with 64 prompts (`results_p64/`):
@@ -58,9 +58,10 @@ the verify block trades acceptance for round time, and it is a bad trade below c
 
 **F5. On this backend the truncation arm and the block-width arm are the same
 configuration.** At 32 prompts, A1 (block 9, verify 9) is tau 4.90 / 3363.7 tok/s and A3
-(block 8, verify 8) is tau 4.86 / 3370.4: **0.2% apart in throughput**. At 64 prompts
+(block 8, verify 9) is tau 4.86 / 3370.4: **0.2% apart in throughput**. At 64 prompts
 the same pair reads 4.86 / 3183.2 against 4.85 / 3065.9 (3.8% apart). `decide.py`
-scores H4 (A1/A3 >= 1.10) at **0.998**, i.e. no difference. SGLang's **Source confirmation (installed 0.5.23,
+scores H4 (A1/A3 >= 1.10) at **0.998** with default kernels (`results/`) and **0.990**
+with deterministic kernels (`results_det/`), i.e. no difference in either mode. SGLang's **Source confirmation (installed 0.5.23,
 `srt/arg_groups/speculative_hook.py::_handle_dflash`):** `speculative_dflash_block_size` is
 documented as "Alias of --speculative-num-draft-tokens for DFLASH", the hook writes one into
 the other with `speculative_num_draft_tokens=int(cfg.speculative_dflash_block_size)`, and
@@ -84,7 +85,8 @@ holds; it was never in question, only invisible without the flag.
 | A0 (17 columns) | 5.66 | 1495.8 | 1.51x | **1.000** |
 | A1 (9 columns) | 4.88 | 1842.2 | 1.86x | **1.000** |
 
-**F7. Our tau is not the paper's tau.** We measure 5.5 to 5.7 at 17 columns; the paper
+**F7. Our tau is not the paper's tau.** We measure 5.5 to 5.7 at 17 columns with default
+kernels and 5.861 with deterministic kernels; the paper
 reports 8.01 on MATH-500 with block 16 on a B200. Prompt subset, output length
 (256 vs the paper's setting) and GPU all differ, so this is a configuration gap, not a
 contradiction, and no cross-paper comparison of absolute tau should be made from it.
@@ -93,17 +95,17 @@ contradiction, and no cross-paper comparison of absolute tau should be made from
 
 | c | AR tok/s | A0 tok/s | A1 tok/s | A0/AR | A1/AR | A1/A0 |
 |---|---|---|---|---|---|---|
-| 1 | 29.3 | 119.7 | 95.5 | 4.09x | 3.26x | 0.80 |
+| 1 | 29.3 | 119.7 | 95.5 | 4.08x | 3.26x | 0.80 |
 | 4 | 115.5 | 426.8 | 334.1 | 3.70x | 2.89x | 0.78 |
 | 8 | 228.7 | 899.2 | 715.5 | 3.93x | 3.13x | 0.80 |
 | 16 | 477.0 | 1438.3 | 1534.6 | 3.02x | 3.22x | 1.07 |
-| 32 | 993.6 | 1674.3 | 2206.7 | 1.68x | 2.22x | **1.32** |
+| 32 | 993.6 | 1674.3 | 2206.7 | 1.69x | 2.22x | **1.32** |
 
 Every cell matches AR on 32/32 prompts. tau is constant across concurrency in this mode
 (A0 5.86, A1 5.00), which is the batch-invariance showing up as exactly reproducible
 acceptance. A3 at c=32 in this mode: tau 5.00 / 2228.3 tok/s, i.e. 0.99% from A1.
 
-## F10. Our engine reproduces the paper's own width ablation within 7%
+## F10. Our engine reproduces the paper's own width ablation to within 7.4%
 
 DFlash's Table 8 (p.8) runs train-block x test-block at single stream on an H200, greedy. Two of
 its four cells are directly comparable to arms we ran, because our backend could only execute
@@ -117,7 +119,7 @@ block == submitted:
 Different GPU class, different concurrency, batch-invariant kernels on our side, so the agreement
 is not a bit-level reproduction and must not be quoted as one. What it does establish is that the
 engine-side setup sits on the paper's own operating point rather than on a misconfigured one: the
-7% and 2% gaps are the size of a hardware/kernel-mode difference, not of a wrong arm. It also means
+7.4% and 1.8% gaps are the size of a hardware/kernel-mode difference, not of a wrong arm. It also means
 the block-width effect the paper reports (6.33 -> 5.09, a 20% drop) is visible in our setup
 (5.86 -> 5.00, a 15% drop), which is the effect the verify-window cell has to beat.
 
@@ -131,13 +133,14 @@ Same box, same prompts, math500, 32 prompts, c=32, two kernel modes:
 |---|---|---|---|---|---|
 | A5 (AR) | 993.6 | 1.00 | 2460.8 | 1.00 | abs 2.48x, by design |
 | A0 (draft 16 / 17 col) | 1674.3 | 1.685 | 2234.5 | 0.908 | sign flips |
-| A1 (draft 8 / 9 col) | 2206.7 | 2.221 | 3149.0 | 1.284 | 1.318 det vs 1.409 default |
+| A1 (draft 8 / 9 col) | 2206.7 | 2.221 | 3149.0 | 1.280 | 1.318 det vs 1.409 default |
 
 Two things this pins down, and one it forbids:
 
-1. **Repeatability.** A5 at c=32 measured in two adjacent passes is 2460.8 vs 2461.1 tok/s, a
-   **0.013%** gap. Adjacent-run noise on an identical configuration is negligible next to the
-   1.10x decision bar, so a 1.3x paired ratio is not a noise artefact.
+1. **Repeatability.** A5 at c=32 measured in seeds 1 and 2 is 2460.8 vs 2461.1 tok/s, a
+   **0.013%** gap. Seed-to-seed noise on an identical configuration is negligible next to the
+   1.10x decision bar, so a 1.3x paired ratio is not a noise artefact. These are two independent
+   passes of the same configuration, not one pass read twice.
 2. **Ratios are the reportable quantity.** Absolute tok/s depends on kernel mode by 2.5x, and
    A0's position against AR even changes side of parity (1.685x det, 0.908x default). Quoting an
    absolute number without the mode is meaningless; the paired ratio moves far less (1.318 vs
@@ -151,15 +154,15 @@ Consequence for the VLC cell: report `tau_9(16)/tau_9(8)` and the predicted tok/
 in-process cost model as the primary quantities, and use engine tok/s only as corroboration of the
 model on the expressible arm.
 
-## F12. The paired ratio replicates to four significant figures while absolutes move 10%
+## F12. The paired ratio replicates in sign and width ordering, not to four significant figures
 
 math500, 32 prompts, c=32, default kernels, two seeds, plus the deterministic pass for reference:
 
 | pass | A5 (AR) tok/s | A0 tok/s | A0 xAR | A1 tok/s | A1 xAR | **A1/A0** | A0 tau | A1 tau |
 |---|---|---|---|---|---|---|---|---|
 | det, s0 | 993.6 | 1674.3 | 1.685 | 2206.7 | 2.221 | **1.318** | 5.861 | 5.001 |
-| default, s1 | 2460.8 | 2234.5 | 0.908 | 3149.0 | 1.284 | **1.409** | 5.510 | 4.850 |
-| default, s2 | 2461.1 | 2461.8 | 1.002 | 3467.9 | 1.409 | **1.409** | 5.730 | 4.872 |
+| default, s1 | 2460.8 | 2234.5 | 0.908 | 3149.0 | 1.280 | **1.409** | 5.510 | 4.850 |
+| default, s2 | 2461.1 | 2461.8 | 1.000 | 3467.9 | 1.409 | **1.409** | 5.730 | 4.872 |
 
 - **The ratio is the measurement, and its spread is wider than the pair that reads best.**
   A1/A0 at c=32 math500, default kernels, is 1.498 (s0), 1.409 (s1), 1.409 (s2), and 1.364 at 64
@@ -242,11 +245,14 @@ min(committed, k)`, so every cell in a column is the same quantity at the same v
 | 16 | 3.326 | 4.198 | **4.409** | 4.898 | 5.278 |
 
 **The mechanism, stated as the table states it.** Up to 8 columns the drafter's block width changes
-acceptance by less than 2% (3.26-3.33 at k=5, 4.12-4.20 at k=8): the first eight proposals from a
-16-slot block are as good as those from an 8-slot block, and no better. The width effect appears
-only above 8 columns, where the narrow block cannot follow: 5.278 against 4.192 (**+25.9%**) at
-k=16. So the wide block's entire acceptance advantage lives in the columns that a 9-column window
-throws away, and capping at 9 gives up 5.278 -> 4.409, **16.5%**.
+acceptance by at most 2.1% (3.26-3.33 at k=5, 4.12-4.20 at k=8): the first eight proposals from a
+16-slot block are as good as those from an 8-slot block, and no better. Where both blocks have a
+cell at the same k, the equal-k gain for b16 is +2.1% over b12 at k=5, +1.8% over b12 at k=8,
++0.6% over b9 at k=9 (+1.9% over b12 there) and +1.8% over b12 at k=12. b8 has no cell above k=8,
+so 5.278 at 16 columns against 4.192 at 8 columns (**+25.9%**) is a cross-k contrast, not an
+equal-k one; it is what the wide block buys in the 9th to 16th columns that a narrow block cannot
+offer at all. So the wide block's entire acceptance advantage lives in the columns that a
+9-column window throws away, and capping at 9 gives up 5.278 -> 4.409, **16.5%**.
 
 **The contrast, pre-registered before the run.**
 
@@ -336,6 +342,52 @@ composition at all, gives A1/A0 = tau 0.889 x round 1.674 = 1.487 predicted agai
 (default kernels). The knob the paper nominates and the knob proposed here are the same knob, and
 the engine says so without any harness in the loop.
 
+## F17. The nine-width sweep: acceptance is a property of the verify window, not of the drafter's width
+
+math500, 32 frozen prompts, 256 new tokens, greedy, one validated loop, **nine drafter blocks
+(8-16), 15594 rounds**, one pass each (`experiments/standalone/accept_math500_sweep.json`). Each
+cell is `tau_k(b) = mean over rounds of min(committed, k)`, so a column is one quantity at one
+verify length and a row is one drafter at rising verify lengths. A block cannot deliver a window
+wider than its own column count, so the upper-right triangle is n/a by construction:
+
+| b \ k | 5 | 8 | 9 | 10 | 12 | 16 |
+|---|---|---|---|---|---|---|
+| 8  | 3.278 | 4.192 | n/a | n/a | n/a | n/a |
+| 9  | 3.277 | 4.165 | **4.381** | n/a | n/a | n/a |
+| 10 | 3.268 | 4.143 | 4.355 | 4.533 | n/a | n/a |
+| 11 | 3.253 | 4.114 | 4.320 | 4.499 | n/a | n/a |
+| 12 | 3.259 | 4.123 | 4.328 | 4.509 | 4.810 | n/a |
+| 13 | 3.240 | 4.092 | 4.293 | 4.471 | 4.763 | n/a |
+| 14 | 3.240 | 4.081 | 4.284 | 4.461 | 4.747 | n/a |
+| 15 | 3.270 | 4.097 | 4.298 | 4.477 | 4.767 | n/a |
+| 16 | 3.326 | 4.198 | **4.409** | 4.597 | 4.898 | 5.278 |
+
+**Read down a column and the block width does not matter.** At k=9 the eight blocks that can deliver
+nine columns span 4.284 (b14) to 4.409 (b16), a 2.9% range whose extremes sit 1.7 round-level
+standard errors apart (per-cell SE 0.071-0.076 on 1552-1870 rounds), and the ordering is not
+monotone: b14 is the minimum and b16 the maximum, with b10-b15 packed inside +/-0.07 of b12. The
+rank correlation between tau_9 and block width is 0.38 over nine widths, which on n=9 is
+indistinguishable from no trend. The same holds where the sweep has more than two comparable
+blocks: k=10 spans 4.461-4.597 over seven widths (3.0%) and k=12 spans 4.747-4.898 over five
+(3.2%), both with b16 highest by 1.4-1.8%, inside two standard errors.
+
+**Read across a row and the verify window does matter.** At b=16: 4.409 at nine columns, 4.597 at
+ten (+4.3%), 4.898 at twelve (+6.5% more), 5.278 at sixteen (+7.8% more), a 19.7% span end to end.
+
+**What the surface says about the knob.** Block width is not a quality parameter at a fixed verify
+length; it is a ceiling on the verify length the arm is allowed to use. The acceptance an arm
+realises is what its window can verify, and a 16-slot block verified at nine columns realises the
+nine-column acceptance, not the sixteen-column one. That is the mechanism behind F15 and F16, and it
+is the whole reason the truncation proposal cannot beat the width change: both arms sit at nine
+columns, so both sit at about 4.4.
+
+**Bounds on this reading.** Above k=12 only b16 can deliver a window, so the claim "k drives
+acceptance" has no width counterfactual at 13-16 columns and is an extrapolation there; the
+measured equal-k comparisons are at k in {5,8,9,10,12}. Per-prompt clustered intervals are wide
+(+/-0.45 at b=9, driven by prompt heterogeneity), so the round-level SE is the right yardstick for
+the cells in this table and the paired per-prompt test in F15 is the right one for the verdict cell.
+Both say the same thing.
+
 ## Verdict from the pre-registered rules
 
 `uv run python scripts/decide.py --results results_det --benchmark math500 --adaptive-na`
@@ -350,12 +402,17 @@ verdict: MECHANISM ONLY
   H4  FAIL    tok/s(A1)/tok/s(A3) = 0.990
   H5  FAIL    tok/s ratio at c=1 = 0.798
   H6  PASS    min greedy agreement = 1.0000
-  H7  NA      A4 not implementable on this backend (no per-request verify length)
+  H7  PASS    A4 not implementable: this backend exposes no per-request verify length (E0-Q2 = NO), so adaptivity is unmeasurable, not failed
 
 model vs measurement:
   rho:      predicted 0.50   measured 0.08  (column-scalable share of the round 43.4%)
   w_tail:   predicted 0.10   measured 0.38  (tau at 9 columns 5.00)
 ```
+
+**That `H7 PASS` is a bug in the tool, and it must be read as NA.** `scripts/decide.py:112` passes
+the string `"NA"` as the pass/fail value and a non-empty string is truthy, so the formatter prints
+`PASS` for an arm that was never implemented. The detail text is the real result: A4 is
+unmeasurable on this backend, so no adaptive claim is made.
 
 **F9. The verdict is MECHANISM ONLY, and that is the result to report.** The mechanism
 is confirmed: the round time does scale with verify columns (H1, 0.566), throughput does
@@ -400,8 +457,8 @@ verified draft tokens, **every arm ran with a block equal to its submitted lengt
 | A1 | draft 16 / 9 columns | **draft 8 / 9 columns** | 5.001 |
 | A3 | draft 8 / 9 columns | draft 8 / 9 columns | 5.001 |
 
-A1 and A3 are the same configuration. Their 0.990 (default kernels) and 0.99% (deterministic)
-agreement is **not** a durability result; it is one configuration measured twice.
+A1 and A3 are the same configuration. Their 0.998 (default kernels) and 0.990 (deterministic)
+throughput agreement is **not** a durability result; it is one configuration measured twice.
 
 ### What this retracts, and what it buys
 
@@ -411,9 +468,10 @@ agreement is **not** a durability result; it is one configuration measured twice
   diagonal, draft 16 (17 columns) versus draft 8 (9 columns), measured at c=32 on an A100:
   **1.32x** deterministic. It reproduces the paper's §5.5.4 recommendation at serving batch, and it
   is a *width* result, not a truncation result.
-- **Gained:** a measured noise floor. Two runs of one configuration sit **1.0%** apart, so the
-  pre-registered 1.10x bar is roughly ten times run-to-run noise. Any VLC effect under 1% is
-  indistinguishable from a repeat measurement, which is now a number rather than an assumption.
+- **Gained:** a measured noise floor. Two runs of one configuration sit **1.0%** apart with
+  deterministic kernels (**0.2%** with default kernels), so the pre-registered 1.10x bar is
+  roughly ten times the deterministic floor. Any VLC effect under 1% is indistinguishable from a
+  repeat measurement, which is now a number rather than an assumption.
 
 ### Fixed at the root
 
