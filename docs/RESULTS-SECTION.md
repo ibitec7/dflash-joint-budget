@@ -85,8 +85,14 @@ at k=5), and the width advantage appears only above 8 columns, where the 8-slot 
 at all. So 5.278 at 16 columns against 4.192 at 8 columns (+25.9%) is a cross-k contrast, not an
 equal-k one; the equal-k gains for b16 are +2.1% at k=5, +1.8% at k=8, +0.6% at k=9 and +1.8% at
 k=12. Truncating at 9 therefore gives up 16.5% of the wide block's committed tokens and buys
-1.018x over the narrow control, inside its own CI. The estimate is a second benchmark pending (`mtbench`, same protocol):
-it replicates or it does not, and it cannot change the math500 verdict.
+1.018x over the narrow control, inside its own CI. The second benchmark agrees on the ordering and
+refines the size: paired over prompts, mtbench gives `tau_9(16)/tau_9(D8) = 1.052 [1.016, 1.094]`
+(25 wins, 7 losses, 21735 rounds), so the acceptance edge of a wider drafter at a fixed nine-column
+window is real but worth 1.8% on one benchmark and 5.2% on the other. The cost of the two arms is
+identical, because both verify nine columns and a wider draft pass is free (6.3 ms at 8 slots, 6.3 ms
+at 16), so the ceiling on the knob is the acceptance ratio and the 1.10 throughput bar needs 10%.
+Against the shipped block-16 arm both benchmarks land on the same number, 1.345 and 1.344 composed
+(RESULTS F16, F19).
 
 Nothing here is estimated or carried over from the block-k arms; those sit inside 5% of each other and that is a warning about the prior, not a substitute for the measurement (NOVELTY.md §3).
 
