@@ -103,6 +103,26 @@ Every cell matches AR on 32/32 prompts. tau is constant across concurrency in th
 (A0 5.86, A1 5.00), which is the batch-invariance showing up as exactly reproducible
 acceptance. A3 at c=32 in this mode: tau 5.00 / 2228.3 tok/s, i.e. 0.99% from A1.
 
+## F10. Our engine reproduces the paper's own width ablation within 7%
+
+DFlash's Table 8 (p.8) runs train-block x test-block at single stream on an H200, greedy. Two of
+its four cells are directly comparable to arms we ran, because our backend could only execute
+block == submitted:
+
+| cell | paper tau (H200, batch 1) | our tau (A100, deterministic, c=1) | delta |
+|---|---|---|---|
+| b16 drafter, tested at b16 (= A0) | 6.33 | 5.86 | -7.4% |
+| b16 drafter, tested at b8 (<= A3) | 5.09 | 5.00 | -1.8% |
+
+Different GPU class, different concurrency, batch-invariant kernels on our side, so the agreement
+is not a bit-level reproduction and must not be quoted as one. What it does establish is that the
+engine-side setup sits on the paper's own operating point rather than on a misconfigured one: the
+7% and 2% gaps are the size of a hardware/kernel-mode difference, not of a wrong arm. It also means
+the block-width effect the paper reports (6.33 -> 5.09, a 20% drop) is visible in our setup
+(5.86 -> 5.00, a 15% drop), which is the effect the verify-window cell has to beat.
+
+Caveat that survives: neither cell is a verify-window test. Both ran block == submitted.
+
 ## Verdict from the pre-registered rules
 
 `uv run python scripts/decide.py --results results_det --benchmark math500 --adaptive-na`
