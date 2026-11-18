@@ -60,6 +60,23 @@ def cell(data: dict, b: int, k: int) -> tuple[float | None, str]:
     return (derived, "rows") if derived is not None else (None, "absent")
 
 
+def tau_at(data: dict, b: int, k: int) -> tuple[float | None, str]:
+    """tau_k(b) regardless of table layout: tau map first, else computed from rows.
+
+    k = b + 1 is allowed here (and only here): ``accepted`` counts the target's correction
+    token, so a block of b drafts commits up to b + 1 tokens and k = b + 1 is a real ceiling,
+    not a truncation of the drafted block. Above that nothing is defined.
+    """
+    if k > b + 1:
+        return None, "absent"
+    tmap = data.get("tau") or {}
+    val = tmap.get(tau_key(b, k))
+    if isinstance(val, (int, float)) and not isinstance(val, bool):
+        return float(val), "tau"
+    derived = mean_tau(data.get("rows") or [], b, k)
+    return (derived, "rows") if derived is not None else (None, "absent")
+
+
 def blocks_in(data: dict) -> list[int]:
     """Blocks named by rows or by the tau map, widest first."""
     found = {int(r["block"]) for r in data.get("rows") or [] if r.get("block") is not None}
@@ -138,6 +155,29 @@ def round_s(data: dict, b: int, k: int) -> float | None:
     return d + v * k / c
 
 
+def column_slope(data: dict) -> float | None:
+    """Seconds per verify column, measured between the two blocks, not assumed.
+
+    The two blocks are timed at different column counts (16 at b=16, 8 at b=8), so the
+    difference between their verify medians divided by the difference in columns is a
+    two-point estimate of the marginal cost of one column. It is the only way to price the
+    single column the narrow arm must add to reach k=9 without assuming proportionality.
+    """
+    _, v16, c16 = timing_medians(data, WIDE)
+    _, v8, c8 = timing_medians(data, NARROW)
+    if None in (v16, c16, v8, c8) or c16 == c8:
+        return None
+    return (v16 - v8) / (c16 - c8)
+
+
+def round_s_slope(data: dict, b: int, k: int, slope: float | None) -> float | None:
+    """round time using the measured column slope for columns beyond the block's own count."""
+    d, v, c = timing_medians(data, b)
+    if slope is None or d is None or v is None or c is None:
+        return None
+    return d + v + slope * (k - c)
+
+
 # --- analysis -----------------------------------------------------------------
 
 
@@ -149,8 +189,8 @@ def analyse(data: dict) -> dict:
             out["cells"][(b, k)] = val
             out["sources"][(b, k)] = src
 
-    out["tau_wide"] = out["cells"].get((WIDE, K_STAR))
-    out["tau_narrow"] = out["cells"].get((NARROW, K_STAR))
+    out["tau_wide"], out["wide_src"] = tau_at(data, WIDE, K_STAR)
+    out["tau_narrow"], out["narrow_src"] = tau_at(data, NARROW, K_STAR)
     out["tau_ratio_table"] = (out["tau_wide"] / out["tau_narrow"]
                               if out["tau_wide"] is not None and out["tau_narrow"] else None)
 
@@ -165,19 +205,40 @@ def analyse(data: dict) -> dict:
     out["tau_factor"] = out["paired_ratio"]
 
     out["medians"] = {b: timing_medians(data, b) for b in (WIDE, NARROW)}
+    out["slope"] = column_slope(data)
     out["round_wide"] = round_s(data, WIDE, K_STAR)
-    out["round_narrow"] = round_s(data, NARROW, K_STAR)
+    # Two prices for the narrow arm's extra column: proportional (the harness's own scaling,
+    # an assumption) and the measured slope (a two-point estimate). Both are reported; the
+    # slope one is primary, and the verdict must survive the less favourable of the two.
+    out["round_narrow_prop"] = round_s(data, NARROW, K_STAR)
+    out["round_narrow_slope"] = round_s_slope(data, NARROW, K_STAR, out["slope"])
+    out["round_narrow"] = (out["round_narrow_slope"] if out["round_narrow_slope"] is not None
+                           else out["round_narrow_prop"])
     out["cost_factor"] = (out["round_narrow"] / out["round_wide"]
                           if out["round_narrow"] and out["round_wide"] else None)
+    out["cost_bracket"] = sorted(
+        f for f in ((out["round_narrow_prop"] / out["round_wide"]
+                     if out["round_narrow_prop"] and out["round_wide"] else None),
+                    out["cost_factor"]) if f is not None)
     out["tok_ratio"] = (out["tau_factor"] * out["cost_factor"]
                         if out["tau_factor"] is not None and out["cost_factor"] else None)
 
     out["tau_ok"] = None if out["tau_factor"] is None else out["tau_factor"] >= TAU_BAR
     out["tok_ok"] = None if out["tok_ratio"] is None else out["tok_ratio"] >= TOK_BAR
+    # The claim must also survive the pessimistic end of the cost bracket.
+    out["tok_conservative"] = (out["tau_factor"] * out["cost_bracket"][0]
+                               if out["tau_factor"] is not None and out["cost_bracket"] else None)
+    out["tok_ok_conservative"] = (None if out["tok_conservative"] is None
+                                  else out["tok_conservative"] >= TOK_BAR)
     if out["tau_ok"] is None or out["tok_ok"] is None:
         out["verdict"] = "no verdict"
     else:
-        out["verdict"] = "SUPPORTED" if out["tau_ok"] and out["tok_ok"] else "NOT SUPPORTED"
+        ok = out["tau_ok"] and out["tok_ok"] and (out["tok_ok_conservative"] is not False)
+        out["verdict"] = "SUPPORTED" if ok else "NOT SUPPORTED"
+        out["failed"] = ", ".join(n for n, v in (("tau ratio", out["tau_ok"]),
+                                                 ("predicted tok/s", out["tok_ok"]),
+                                                 ("tok/s at the pessimistic cost",
+                                                  out["tok_ok_conservative"])) if v is False)
     out["tau_needed"] = TOK_BAR / out["cost_factor"] if out["cost_factor"] else None
     return out
 
@@ -200,7 +261,8 @@ def render(data: dict, path: str | Path) -> dict:
           "no value is interpolated past a block's drafted width.")
     missing = [k for k in ("rows", "tau", "timings") if k not in data]
     if missing:
-        print(f"missing top-level keys: {', '.join(missing)} — printed as '{ABSENT}'; no verdict")
+        tail = "; no verdict" if a["verdict"] == "no verdict" else ""
+        print(f"missing top-level keys: {', '.join(missing)} — printed as '{ABSENT}'{tail}")
     cfg = data.get("config")
     print(f"config: {json.dumps(cfg, sort_keys=True) if cfg else ABSENT}")
 
@@ -219,6 +281,11 @@ def render(data: dict, path: str | Path) -> dict:
         print(f"  note: tau key absent, computed from rows: {', '.join(derived)}")
     if not a["blocks"]:
         print(f"  {ABSENT}: neither rows nor tau keys name a block")
+    if NARROW in a["blocks"] and a["tau_narrow"] is not None:
+        print(f"  k = b + 1 is a real ceiling, not a truncated block: 'accepted' counts the "
+              f"target's correction token, so b={NARROW} commits up to {NARROW + 1} tokens; [2] "
+              f"reads tau_{K_STAR}({NARROW}) = {fmt(a['tau_narrow'])} (source: "
+              f"{a['narrow_src']}), while the table leaves that cell '{NA}'.")
 
     print(f"\n[2] decisive contrast at k={K_STAR}: tau_{K_STAR}(b={WIDE}) vs "
           f"tau_{K_STAR}(b={NARROW})")
@@ -234,16 +301,20 @@ def render(data: dict, path: str | Path) -> dict:
     print(f"  per-prompt    wide>narrow {a['paired_wins']}, tie {a['paired_ties']}, "
           f"wide<narrow {a['paired_losses']}")
 
-    print("\n[3] cost model — round(b,k) = median draft_s(b) + median verify_s(b) * k / "
-          "columns(b)")
-    print("  assumption, stated not derived: verify time is linear in columns over the range "
-          f"measured; k={K_STAR} at b={NARROW} extrapolates past its measured columns.")
+    print("\n[3] cost model — round(b,k) = median draft_s(b) + verify for k columns")
+    print(f"  the two blocks are timed at different column counts, so the marginal cost of a "
+          f"column is measured, not assumed: slope = {fmt(a['slope'], '.6f')} s/column")
     for b in (WIDE, NARROW):
         d, v, c = a["medians"][b]
         print(f"  b={b:<2}: median draft_s = {fmt(d, '.5f')}   median verify_s = "
               f"{fmt(v, '.5f')}   median columns = {fmt(c, '.0f')}")
     print(f"  round({WIDE},{K_STAR}) = {fmt(a['round_wide'], '.5f')} s   "
-          f"round({NARROW},{K_STAR}) = {fmt(a['round_narrow'], '.5f')} s")
+          f"round({NARROW},{K_STAR}) = {fmt(a['round_narrow'], '.5f')} s "
+          f"(slope model; proportional would give {fmt(a['round_narrow_prop'], '.5f')} s)")
+    if len(a["cost_bracket"]) == 2:
+        print(f"  cost factor bracket {fmt(a['cost_bracket'][0])} .. {fmt(a['cost_bracket'][1])}"
+              f"  -> tok/s ratio at the pessimistic end {fmt(a['tok_conservative'])} "
+              f"({tri(a['tok_ok_conservative'])})")
     print(f"  predicted tok/s ratio ({WIDE},{K_STAR})/({NARROW},{K_STAR}) = "
           f"tau factor {fmt(a['tau_factor'])} x cost factor "
           f"round({NARROW},{K_STAR})/round({WIDE},{K_STAR}) {fmt(a['cost_factor'])} = "
@@ -260,10 +331,16 @@ def render(data: dict, path: str | Path) -> dict:
     print(f"  needs predicted tok/s ratio >= {TOK_BAR:.2f}; "
           f"observed {fmt(a['tok_ratio'])} -> {tri(a['tok_ok'])}")
     if a["tau_needed"] is not None:
-        print(f"  at the measured cost factor {fmt(a['cost_factor'])}, acceptance would have to "
-              f"reach {fmt(a['tau_needed'])} to clear {TOK_BAR:.2f} "
-              f"({TOK_BAR:.2f} / {fmt(a['cost_factor'])})")
-    print(f"  verdict: {a['verdict']}")
+        if a["tau_needed"] <= 1.0:
+            print(f"  at the measured cost factor {fmt(a['cost_factor'])}, the cost side alone "
+                  f"clears {TOK_BAR:.2f}: any tau ratio >= 1.0 passes the tok/s bar "
+                  f"({TOK_BAR:.2f} / {fmt(a['cost_factor'])} = {fmt(a['tau_needed'])} <= 1)")
+        else:
+            print(f"  at the measured cost factor {fmt(a['cost_factor'])}, the tau ratio would "
+                  f"have to reach {fmt(a['tau_needed'])} to clear {TOK_BAR:.2f} "
+                  f"({TOK_BAR:.2f} / {fmt(a['cost_factor'])})")
+    print(f"  verdict: {a['verdict']}"
+          + (f"  (failed: {a['failed']})" if a.get("failed") else ""))
     return a
 
 
@@ -312,6 +389,13 @@ def selftest() -> None:
     assert analyse({})["verdict"] == "no verdict"
     nothing = analyse({"rows": [], "tau": {}, "timings": []})
     assert nothing["tau_factor"] is None and nothing["tok_ratio"] is None
+    # b+1 is the committed-token ceiling; past it the file defines nothing.
+    assert tau_at(SUPPORTING, NARROW, K_STAR) == (5.625, "rows")
+    assert tau_at(SUPPORTING, NARROW, NARROW + 2)[0] is None
+    assert cell(SUPPORTING, NARROW, K_STAR)[1] == "na"
+    assert cell(SUPPORTING, WIDE, 17)[1] == "na"
+    # the falsifying file must fail on the acceptance bar alone, not only on cost
+    assert analyse(FALSIFYING)["tau_ok"] is False
     print("SELFTEST=PASS")
 
 
