@@ -138,7 +138,7 @@ def reference_loop(draft, target, embed, lid, mask, blk: int, ids: torch.Tensor,
 
 
 def check_reference(draft, target, embed, lid, mask, tok, prompts, max_new: int, blk: int,
-                    mode: str = "raw"):
+                    mode: str = "raw", engine_tau: float = 0.0):
     """Diff my loop against the checkpoint's own spec_generate; no tolerance, token for token.
 
     Two ways this can pass while measuring nothing, both now refused:
@@ -147,6 +147,7 @@ def check_reference(draft, target, embed, lid, mask, tok, prompts, max_new: int,
       both loops are plain greedy decoding and agree whatever the drafter does. A gate that only
       compares tokens therefore validates an instrument that cannot accept.
     """
+    taus = []
     for i, p in enumerate(prompts):
         ids = encode(tok, p, mode)
         with torch.no_grad():
@@ -160,11 +161,16 @@ def check_reference(draft, target, embed, lid, mask, tok, prompts, max_new: int,
             print(f"  REF  {ref[0, ids.shape[1]:].tolist()[:16]}")
             print(f"  MINE {mine[0, ids.shape[1]:].tolist()[:16]}")
             raise SystemExit("REFERENCE_MISMATCH: instrument not validated, refusing to measure")
-        if sum(rounds) / len(rounds) < 2.0:
-            print(f"  the reference accepts {sum(rounds) / len(rounds):.2f} tokens per round: at this "
-                  "level both loops are plain greedy decoding and agree without the drafter working")
-            raise SystemExit("REFERENCE_DEGENERATE: prompt convention or wiring is wrong, "
-                             "refusing to measure")
+        taus.append(sum(rounds) / len(rounds))
+    mean_tau = sum(taus) / len(taus)
+    floor = 0.6 * engine_tau if engine_tau else 1.5
+    print(f"REFERENCE_TAU mean={mean_tau:.2f} per prompt={[round(t, 2) for t in taus]} "
+          f"floor={floor:.2f}" + (f" engine={engine_tau:.2f}" if engine_tau else ""))
+    if mean_tau < floor:
+        print("  the reference accepts too few drafts per round: at that level both loops are plain "
+              "greedy decoding and agree whether or not the drafter works, so agreement proves nothing")
+        raise SystemExit("REFERENCE_DEGENERATE: prompt convention or wiring is wrong, "
+                         "refusing to measure")
     print(f"REFERENCE_OK mode={mode}")
 
 
@@ -172,6 +178,10 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--bench", default="math500")
     ap.add_argument("--prompt-mode", default="raw", choices=("raw", "chat"))
+    ap.add_argument("--check-new", type=int, default=256,
+                    help="tokens the reference check decodes; shorter windows understate tau")
+    ap.add_argument("--engine-tau", type=float, default=0.0,
+                    help="tau the engine reports for this benchmark, for the cross-instrument gate")
     ap.add_argument("--prompts", type=int, default=32)
     ap.add_argument("--ar-len", type=int, default=128, help="frozen AR prefix length it generates")
     ap.add_argument("--blocks", default="16,12,9,8")
@@ -198,7 +208,8 @@ def main() -> None:
 
     if a.check_ref:
         check_reference(draft, target, embed, lid, mask, tok, prompts[:a.check_ref],
-                        a.max_new, int(draft.block_size), mode=a.prompt_mode)
+                        a.check_new, int(draft.block_size), mode=a.prompt_mode,
+                        engine_tau=a.engine_tau)
 
     blocks = [int(b) for b in a.blocks.split(",")]
     rows, timings = [], []
