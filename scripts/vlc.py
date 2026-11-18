@@ -147,6 +147,20 @@ def timing_medians(data: dict, b: int) -> tuple:
             statistics.median(cols) if cols else None)
 
 
+def column_flatness(data: dict) -> float | None:
+    """Relative change in verify time from the narrow block's columns to the wide block's.
+
+    Decides which cost model this instrument can support. At batch 1 on one A100 the verify pass is
+    memory-bound: 8 columns and 16 columns both cost 38.7 and 39.0 ms. Under flat verify the cost of
+    a column is zero and the proportional model would invent a 39% saving for the wide arm.
+    """
+    _, v16, c16 = timing_medians(data, WIDE)
+    _, v8, c8 = timing_medians(data, NARROW)
+    if None in (v16, c16, v8, c8) or not v8:
+        return None
+    return abs(v16 - v8) / v8
+
+
 def round_s(data: dict, b: int, k: int) -> float | None:
     """median draft_s(b) + median verify_s(b) * k / columns(b); linear in columns."""
     d, v, c = timing_medians(data, b)
@@ -205,7 +219,37 @@ def analyse(data: dict) -> dict:
     out["tau_factor"] = out["paired_ratio"]
 
     out["medians"] = {b: timing_medians(data, b) for b in (WIDE, NARROW)}
+    out["flatness"] = column_flatness(data)
+    flat = out["flatness"] is not None and out["flatness"] < 0.05
+    out["cost_model"] = ("flat verify" if flat else "proportional verify")
     out["slope"] = column_slope(data)
+    if flat:
+        # Verify does not scale with columns in this instrument, so a round costs what it cost.
+        # This is the honest model here and it is not the pessimistic one for the proposal only
+        # because the tau bar already fails; both are reported.
+        _dw, _vw, _cw = timing_medians(data, WIDE)
+        _dn, _vn, _cn = timing_medians(data, NARROW)
+        out["round_wide"] = (_dw + _vw) if None not in (_dw, _vw) else None
+        out["round_narrow"] = (_dn + _vn) if None not in (_dn, _vn) else None
+        out["round_narrow_prop"] = out["round_narrow"]
+        out["cost_factor"] = (out["round_wide"] / out["round_narrow"]
+                              if out["round_wide"] and out["round_narrow"] else None)
+        out["cost_bracket"] = [out["cost_factor"]] if out["cost_factor"] else []
+        out["tok_ratio"] = (out["tau_factor"] * out["cost_factor"]
+                            if out["tau_factor"] is not None and out["cost_factor"] else None)
+        out["tok_conservative"] = out["tok_ratio"]
+        out["tau_ok"] = None if out["tau_factor"] is None else out["tau_factor"] >= TAU_BAR
+        out["tok_ok"] = None if out["tok_ratio"] is None else out["tok_ratio"] >= TOK_BAR
+        out["tok_ok_conservative"] = out["tok_ok"]
+        if out["tau_ok"] is None or out["tok_ok"] is None:
+            out["verdict"] = "no verdict"
+        else:
+            ok = out["tau_ok"] and out["tok_ok"]
+            out["verdict"] = "SUPPORTED" if ok else "NOT SUPPORTED"
+            out["failed"] = ", ".join(n for n, v in (("tau ratio", out["tau_ok"]),
+                                                     ("predicted tok/s", out["tok_ok"])) if v is False)
+        out["tau_needed"] = TOK_BAR / out["cost_factor"] if out["cost_factor"] else None
+        return out
     out["round_wide"] = round_s(data, WIDE, K_STAR)
     # Two prices for the narrow arm's extra column: proportional (the harness's own scaling,
     # an assumption) and the measured slope (a two-point estimate). Both are reported; the
@@ -301,7 +345,12 @@ def render(data: dict, path: str | Path) -> dict:
     print(f"  per-prompt    wide>narrow {a['paired_wins']}, tie {a['paired_ties']}, "
           f"wide<narrow {a['paired_losses']}")
 
-    print("\n[3] cost model — round(b,k) = median draft_s(b) + verify for k columns")
+    print(f"\n[3] cost model — {a.get('cost_model', 'proportional verify')}"
+          f" (verify medians move {fmt(a.get('flatness'))} from {NARROW} to {WIDE} columns)")
+    if a.get("cost_model") == "flat verify":
+        print("  verify is memory-bound at this batch: columns are free, so a round costs what it "
+              "cost. Pricing columns from the engine instead (c=32, 9 vs 17 columns, 30.31 vs "
+              "50.74 ms) would flatter the proposal and still not clear the tau bar.")
     print(f"  the two blocks are timed at different column counts, so the marginal cost of a "
           f"column is measured, not assumed: slope = {fmt(a['slope'], '.6f')} s/column")
     for b in (WIDE, NARROW):
