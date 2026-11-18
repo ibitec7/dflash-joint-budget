@@ -119,6 +119,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--max-new-tokens", type=int, default=256)
     ap.add_argument("--out", default="results")
     ap.add_argument("--force", action="store_true")
+    ap.add_argument("--dump-texts", action="store_true",
+                    help="also write <record>.texts.json (needed for cross-run determinism)")
     args = ap.parse_args(argv)
 
     if args.dry_run:
@@ -174,6 +176,9 @@ def main(argv: list[str] | None = None) -> int:
                 for c in conc:
                     rec = record("A5", bench, c, seed, ar_cfg, ar_st[c], 1.0, len(texts), ar_tok[c])
                     (out / f"A5_{bench}_c{c}_s{seed}.json").write_text(json.dumps(rec, indent=2))
+                    if args.dump_texts:
+                        (out / f"A5_{bench}_c{c}_s{seed}.texts.json").write_text(
+                            json.dumps(ar_outs[c]))
                     written += 1
                     print(f"  c={c:<3} A5  tau={rec['tau']:.2f} tok/s={rec['tok_per_s']:.1f}")
 
@@ -194,6 +199,9 @@ def main(argv: list[str] | None = None) -> int:
                             raise SystemExit(
                                 f"{p} exists; rerun with --force to overwrite measurements")
                         p.write_text(json.dumps(rec, indent=2))
+                        if args.dump_texts:
+                            (out / f"{arm}_{bench}_c{c}_s{seed}.texts.json").write_text(
+                                json.dumps(outs))
                         written += 1
                         print(f"  c={c:<3} {arm} tau={rec['tau']:.2f} "
                               f"tok/s={rec['tok_per_s']:.1f} match={rec['exact_match_ar']:.3f}")
