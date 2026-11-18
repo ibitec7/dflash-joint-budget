@@ -31,9 +31,17 @@ single-stream and holds the drafter fixed, AdaFlash has concurrency but a traine
 arm, and DDTree's budget is tree nodes rather than submitted prefix length. That leaves our
 contribution as a controlled two-arm ablation on one model, not a new controller — the claim that
 the two knobs are non-substitutes, one keeping acceptance while cutting cost and the other cutting
-both, is untested by any of them. If H1 (column sensitivity) or H4 (VLC ≥ 1.10× the block-8 arm)
+both, is untested by any of them. If H1 (column sensitivity) or H4 (VLC >= 1.10x the block-8 arm)
 fails, nothing is left that these five papers do not already cover, and the report should say so
 rather than dress up the critique as a method.
+
+**Outcome (2026-11-18).** H1 holds: the column ratio is 1.67 and the loss at block 16 is 0.92x AR at
+c=32. H4-VLC fails: 1.018 acceptance [0.989, 1.049] on math500 and 1.052 [1.016, 1.094] on mtbench
+against a 1.05 bar, and 1.013 / 1.051 predicted throughput against a 1.10 bar, because both arms
+verify nine columns and the draft width is free. What survives is the critique of the width claim at
+concurrency plus one quantified transfer: truncating the shipped block-16 arm at nine columns is
+worth 1.34x over it, the same place the block-size flag reaches. That is the report this file
+demanded, and it is not dressed up as a method.
 
 ## Provenance
 
