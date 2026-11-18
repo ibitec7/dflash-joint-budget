@@ -161,19 +161,12 @@ math500, 32 prompts, c=32, default kernels, two seeds, plus the deterministic pa
 | default, s1 | 2460.8 | 2234.5 | 0.908 | 3149.0 | 1.284 | **1.409** | 5.510 | 4.850 |
 | default, s2 | 2461.1 | 2461.8 | 1.002 | 3467.9 | 1.409 | **1.409** | 5.730 | 4.872 |
 
-- **The ratio is the measurement.** A1/A0 is 1.409 at both default-kernel seeds, identical to
-  four significant figures, while the absolute tokens/s for both arms move ~10% between those
-  same seeds (A0 2234.5 -> 2461.8, A1 3149.0 -> 3467.9). Whatever moves the absolute number
-  moves both arms together and cancels in the ratio. Absolute throughput is a property of the
-  pass; the ratio is a property of the arms.
-- **AR is not a stable denominator across seeds either** (2460.8 vs 2461.1, but A0 lands on both
-  sides of parity with it: 0.908x at s1, 1.002x at s2). A claim phrased as "beats autoregressive
-  decoding" is therefore a claim with a 10% denominator wobble; a claim phrased as a paired ratio
-  between two speculative arms is not.
-- **tau is not portable across kernel modes and not perfectly stable across seeds** (A0 5.861 det,
-  5.510 s1, 5.730 s2). Report tau per pass, never averaged across modes.
-- **Deterministic mode costs 2.5x absolute throughput and 7% of the ratio** (1.318 vs 1.409). Any
-  bit-exactness claim and any throughput claim must come from the same pass.
+- **The ratio is the measurement, and its spread is wider than the pair that reads best.**
+  A1/A0 at c=32 math500, default kernels, is 1.498 (s0), 1.409 (s1), 1.409 (s2), and 1.364 at 64
+  prompts (results_p64, s7); deterministic kernels give 1.318. So the estimable quantity is a
+  **range of 1.32 to 1.50**, not 1.409 twice: quoting the two seeds that agree to four figures and
+  not s0 would be exactly the selective reading this critique exists to catch. The sign and the
+  approximate size survive every seed; the fourth digit does not.
 
 Consequence: the VLC cell's headline is a paired ratio with a CI, and its corroboration on the
 expressible arm is the sequence 1.318 / 1.409 / 1.409, not a single absolute number.
