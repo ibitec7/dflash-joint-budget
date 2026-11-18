@@ -227,6 +227,67 @@ contexts rather than the engine's scheduler state. The ratio is unaffected by th
 arms ride the same contexts), but the absolute level is not comparable and must not be quoted as a
 reproduction of the engine. The 32-prompt run on both benchmarks is the version that decides.
 
+## F15. The decisive cell: truncating the wide block at 9 columns buys nothing (NOT SUPPORTED)
+
+math500, 32 frozen prompts, raw prompt convention, 256 new tokens, greedy, one validated loop, one
+pass per drafter block, **7079 rounds**. Acceptance cells are `tau_k(b) = mean over rounds of
+min(committed, k)`, so every cell in a column is the same quantity at the same verify length
+(`experiments/standalone/accept_math500.json`, key `tau`):
+
+| drafter block b \ verify columns k | 5 | 8 | 9 | 12 | 16 |
+|---|---|---|---|---|---|
+| 8  | 3.278 | 4.192 | n/a | n/a | n/a |
+| 9  | 3.277 | 4.165 | **4.381** | n/a | n/a |
+| 12 | 3.259 | 4.123 | 4.328 | 4.810 | n/a |
+| 16 | 3.326 | 4.198 | **4.409** | 4.898 | 5.278 |
+
+**The mechanism, stated as the table states it.** Up to 8 columns the drafter's block width changes
+acceptance by less than 2% (3.26-3.33 at k=5, 4.12-4.20 at k=8): the first eight proposals from a
+16-slot block are as good as those from an 8-slot block, and no better. The width effect appears
+only above 8 columns, where the narrow block cannot follow: 5.278 against 4.192 (**+25.9%**) at
+k=16. So the wide block's entire acceptance advantage lives in the columns that a 9-column window
+throws away, and capping at 9 gives up 5.278 -> 4.409, **16.5%**.
+
+**The contrast, pre-registered before the run.**
+
+| quantity | value | source |
+|---|---|---|
+| tau_9(16) | 4.409 | `tau["b16_k9"]` |
+| tau_9(9) | 4.381 | `tau["b9_k9"]` |
+| ratio of means | 1.006 | the table above |
+| **paired ratio on (prompt, ctx_len)** | **1.018, 95% CI [0.989, 1.049]** | `vlc.py` [2], 10000 resamples, seed 0 |
+| per-prompt wide>narrow / tie / wide<narrow | 20 / 0 / 12 | `vlc.py` [2] |
+| sign test on the 32 discordant prompts | p = 0.215 | binomial, two-sided |
+| cost factor round(9,9)/round(16,9) | 1.005 | medians 45.08 / 45.29 ms |
+| predicted tok/s ratio | 1.023 | tau x cost |
+| bars | tau >= 1.05, tok/s >= 1.10 | `docs/EXPERIMENTS.md` H4-VLC |
+
+Both bars fail. The 95% CI excludes a true ratio of 1.05, and the direction is not significant on
+its own (p = 0.215). Under the pre-committed collapse rule this is the negative result the rule was
+written for:
+
+> On a bidirectional-block drafter, the block-size remedy DFlash nominates in 5.5.4 and the
+> verify-window truncation proposed here buy the same thing. Not a separate knob.
+
+**Why the cost side is not the consolation prize.** At batch 1 the verify pass is memory-bound:
+the round costs 44.94, 45.08, 45.18 and 45.29 ms for blocks 8, 9, 12 and 16, a 0.8% spread across
+an 8-to-16 column range, and the draft pass is 6.3 ms at both 8 and 16 slots. Columns are free
+here, so this instrument cannot price them. Pricing them from the engine instead (c=32, 9 vs 17
+columns: 30.31 vs 50.74 ms, results/A1_math500_c32_s0.json, results/A0_math500_c32_s0.json, ratio
+1.674) would hand the proposal a 1.67x round advantage and it would still need tau >= 0.66 to clear
+the tok/s bar at 1.10, which the measured 1.018 does not reach on its own terms. The verdict does
+not depend on which cost model is used: at a cost factor of 1.674 the predicted tok/s ratio is
+1.018 x 1.674 = 1.70, but that is a claim about column pricing, not about the knob, and the tau bar
+fails independently.
+
+**Threat specific to this table.** The loop reproduces the checkpoint's own `spec_generate` token
+for token, and it still under-accepts against the engine: tau_16(16) = 5.278 here against 5.861
+from the engine on the same benchmark (math500 3.73 vs 5.86 and mtbench 2.29 vs 4.08 at the gate).
+The engine's integration differs from the checkpoint's reference loop in how target hidden states
+are carried across rounds, and this harness inherits the reference loop's convention. Both arms sit
+inside one instrument on byte-identical contexts, so the ratio travels; the absolute level does not,
+and no sentence here compares this tau to a paper tau.
+
 ## Verdict from the pre-registered rules
 
 `uv run python scripts/decide.py --results results_det --benchmark math500 --adaptive-na`
