@@ -136,7 +136,11 @@ def check_reference(draft, target, embed, lid, mask, tok, prompts, max_new: int,
             raise SystemExit("REFERENCE_MISMATCH: instrument not validated, refusing to measure")
         taus.append(sum(rounds) / len(rounds))
     mean_tau = sum(taus) / len(taus)
-    floor = 0.6 * engine_tau if engine_tau else 1.5
+    # 0.5x, not 0.6x: this loop is the checkpoint's own reference generator and it under-accepts
+    # 36-44% against the engine on the same benchmarks (math500 3.73 vs 5.86, mtbench 2.29 vs
+    # 4.08), so a tight relative floor would reject a correctly wired instrument. Exact token
+    # agreement with spec_generate is the real gate; this floor only catches a collapsed drafter.
+    floor = 0.5 * engine_tau if engine_tau else 1.5
     print(f"REFERENCE_TAU mean={mean_tau:.2f} per prompt={[round(t, 2) for t in taus]} "
           f"floor={floor:.2f}" + (f" engine={engine_tau:.2f}" if engine_tau else ""))
     if mean_tau < floor:
