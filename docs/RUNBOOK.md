@@ -50,24 +50,41 @@ Marker `E1-RATIO ... PASS`. `FAIL` (ratio ≥0.85, in practice ≈1.0) → R1 fi
 32 prompts: a gate, not data. These records stay in `results_e1/` and must not be merged into `results/`, where `decide.py` would average them into the same cell as the 200-prompt grid.
 
 ## S3 — E2 main grid
-A3 (width 8) needs a b8 drafter, so gate it first:
-```bash
-curl -s -o /dev/null -w 'A3-DRAFTER http=%{http_code}\n' https://huggingface.co/api/models/z-lab/Qwen3-8B-DFlash-b8
-```
-`http=200` → run 3.2. `http=401`/`404` → **no b8 DFlash checkpoint exists for Qwen3-8B** (the only 8B repo is `-b16`): A3 unmeasurable, H4 MISSING, and `decide.py` returns INCOMPLETE however good the other cells are. Serving b16 with 9 columns is A1, not A3 — never relabel it. Log `GAP-A3`, skip 3.2/3.4, read §4 on INCOMPLETE.
+
+A3 is a FLAG, not a checkpoint: `speculative_dflash_block_size` (alias of
+`speculative_num_draft_tokens`) sets the DFlash verify window, and
+`srt/arg_groups/speculative_hook.py` writes one into the other
+(`speculative_num_draft_tokens=int(cfg.speculative_dflash_block_size)`). Setting both with
+different values is a hard `ValueError`. So block 8 runs the published `-b16` drafter with
+the flag at 8: `--drafter z-lab/Qwen3-8B-DFlash-b16 --arms A3`.
+
+The consequence is a finding, not a gap: A1 (draft 16, verify 9) and A3 (block 8) are the
+same server configuration, measured 0.2% apart at c=32 (H4 = 0.990). Do not spend a run
+hoping they separate; the separation needs a patched draft worker that keeps a 16-token
+block and hands only 9 columns to verification.
+
+`max_running_requests` is silently reset to **48** for speculative decoding. At c=32 the
+chunk fits inside that, so our cells are unaffected; anything above c=48 needs
+`--max-running-requests` set explicitly or the batch is capped without a warning.
+
 ```bash
 # 3.1 main arms + AR denominator, both benchmarks, seed 0 (A5 records come from this run)
 "$PY" scripts/run_grid.py --backend sglang --drafter z-lab/Qwen3-8B-DFlash-b16 --arms A0,A1,A5 --benchmarks math500,mtbench --concurrency 1,4,8,16,32 --seeds 0 --out results
-# 3.2 A3, only if the gate printed http=200
-"$PY" scripts/run_grid.py --backend sglang --drafter z-lab/Qwen3-8B-DFlash-b8 --arms A3 --benchmarks math500,mtbench --concurrency 1,4,8,16,32 --seeds 0 --out results
+# 3.2 A3 (block 8 on the b16 drafter: the flag IS the block size)
+"$PY" scripts/run_grid.py --backend sglang --drafter z-lab/Qwen3-8B-DFlash-b16 --arms A3 --benchmarks math500,mtbench --concurrency 1,4,8,16,32 --seeds 0 --out results
 # 3.3 three seeds on the headline cells (new filenames, so no --force needed)
 "$PY" scripts/run_grid.py --backend sglang --drafter z-lab/Qwen3-8B-DFlash-b16 --arms A0,A1,A5 --benchmarks math500 --concurrency 32 --seeds 1,2 --out results
-# 3.4 A3 seeds, only with A3 present
-"$PY" scripts/run_grid.py --backend sglang --drafter z-lab/Qwen3-8B-DFlash-b8 --arms A3 --benchmarks math500 --concurrency 32 --seeds 1,2 --out results
+# 3.4 A3 seeds
+"$PY" scripts/run_grid.py --backend sglang --drafter z-lab/Qwen3-8B-DFlash-b16 --arms A3 --benchmarks math500 --concurrency 32 --seeds 1,2 --out results
+# 3.5 quality-valid block: every quality claim comes from here, never from 3.1
+"$PY" scripts/run_grid.py --backend sglang --drafter z-lab/Qwen3-8B-DFlash-b16 --arms A0,A1,A5 --deterministic --benchmarks math500 --concurrency 1,4,8,16,32 --seeds 0 --out results_det
 ```
 Markers: one line per cell, `c=32  A1 tau=7.xx tok/s=xxx.x match=0.99x`. Count: `ls results/*.json | wc -l` → **36** without A3 (30 from 3.1 + 6 from 3.3), **48** with it (3.2's 10 + 3.4's 2).
 
-Fail: `<path> exists; rerun with --force` → that cell is measured already; change `--seeds`, never `--force` a published cell. CUDA OOM at c=32 → something else holds memory, re-check S0, re-run that cell alone. `BackendUnavailable` → S0 P6. `match < 0.99` on any A1/A3 cell → H6 fail: stop, a completed run would be INVALID.
+Fail: `<path> exists; rerun with --force` → that cell is measured already; change `--seeds`, never `--force` a published cell. CUDA OOM at c=32 → something else holds memory, re-check S0, re-run that cell alone. `BackendUnavailable` → S0 P6. `match` below 0.99 on the DEFAULT kernels is expected and means nothing: two identical AR
+runs agree on only 42% of prompts at c=32, so the default path cannot support an
+exact-match gate at all. Judge H6 on the `--deterministic` cells (3.5), where every arm
+matches AR 32/32. A `match < 0.99` in 3.5 is the real failure.
 
 ## S4 — Pull the results back and take the verdict
 ```bash
@@ -111,4 +128,9 @@ Nothing has to keep running: every cell is a batch process that exits, so there 
 ## Gaps this runbook does not paper over
 - **A4 is unimplementable as coded:** `run_grid.py` refuses it by selector whatever E0 reports, and the adapter fixes the length at `sglang.Engine(...)` construction. Enabling it is a change to `EngineConfig`/`src/serve.py`, not an operator step.
 - **A2's sweep is unreachable** from `run_grid.py`: `ARMS["A2"].verify_columns` is `None`, which falls back to 17, so an A2 run silently reproduces A0 (verified). The sweep needs one process per column count via `src/serve.py --verify-columns`, whose JSON is not a `decide.py` record — keep it outside `results/`.
-- **A3 needs a checkpoint the Hub does not publish for this target** (§S3 gate). `e0_probe.py --backend` accepts only `sglang|vllm`; Q1 always runs the transformers path internally. Any flag not shown above is unverified here: check `--help` before using it.
+- **A3 is not a separate configuration on this backend**: the block size and the verify
+  window are one field (`speculative_dflash_block_size` == `speculative_num_draft_tokens`),
+  so A1 and A3 measured 0.2% apart and H4 scored 0.990. Testing the truncation-vs-width
+  claim requires patching the draft worker, which no flag exposes.
+- **`decide.py --adaptive-na` is required on this backend**: H7 depends on a per-request
+  verify length, which no public endpoint exposes (E0-Q2 = NO), so it is N/A, not MISSING.

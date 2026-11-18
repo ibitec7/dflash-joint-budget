@@ -15,7 +15,7 @@ counts is `docs/EXPERIMENTS.md`; the verdict is `scripts/decide.py`.
 | decoding | greedy (temperature 0), `max_new_tokens=256` |
 | benchmark | frozen MATH-500 prompts, first 32 (replication at 64 for c=32) |
 | arms | A0 = 17 verify columns, A1 = 9 columns, A3 = block 8 / 9 columns, A5 = plain AR |
-| concurrency | batch chunk size c in {1, 4, 8, 16, 32} |
+| concurrency | batch chunk size c in {1, 4, 8, 16, 32} (sglang clamps `max_running_requests` to 48 for spec decoding; our cells fit inside it) |
 
 ## The main grid: math500, 32 prompts, c = 1 to 32
 
@@ -60,9 +60,13 @@ the verify block trades acceptance for round time, and it is a bad trade below c
 configuration.** At 32 prompts, A1 (draft 16, verify 9) is tau 4.90 / 3363.7 tok/s and A3
 (block 8, verify 9) is tau 4.86 / 3370.4: **0.2% apart in throughput**. At 64 prompts
 the same pair reads 4.86 / 3183.2 against 4.85 / 3065.9 (3.8% apart). `decide.py`
-scores H4 (A1/A3 >= 1.10) at **0.998**, i.e. no difference. SGLang's `speculative_num_draft_tokens` sets the DFlash verify
-block and the draft worker reads that same value as its block size, so "draft wide,
-verify narrow" is not expressible through the public API. The two-knob separation our
+scores H4 (A1/A3 >= 1.10) at **0.998**, i.e. no difference. SGLang's **Source confirmation (installed 0.5.23,
+`srt/arg_groups/speculative_hook.py::_handle_dflash`):** `speculative_dflash_block_size` is
+documented as "Alias of --speculative-num-draft-tokens for DFLASH", the hook writes one into
+the other with `speculative_num_draft_tokens=int(cfg.speculative_dflash_block_size)`, and
+setting both to different values is a hard `ValueError`. The draft worker reads that single
+value as its block size, so "draft wide, verify narrow" is not expressible through the
+public API. The two-knob separation our
 proposal is built on is **not testable on sglang 0.5.23** without patching the draft
 worker to keep its 16-token block and hand only the first 9 columns to verification.
 
