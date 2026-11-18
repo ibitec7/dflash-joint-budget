@@ -140,6 +140,7 @@ def check_reference(draft, target, embed, lid, mask, tok, prompts, max_new: int,
 
 def main() -> None:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--bench", default="math500")
     ap.add_argument("--prompts", type=int, default=32)
     ap.add_argument("--ar-len", type=int, default=128, help="frozen AR prefix length it generates")
     ap.add_argument("--blocks", default="16,12,9,8")
@@ -158,9 +159,9 @@ def main() -> None:
     print(f"CONFIG block_size={draft.block_size} mask={mask} layers={lid}")
 
     prompts = [it["prompt"] for it in
-               load_frozen(Path(__file__).resolve().parents[2] / "data" / "frozen_math500.json")
+               load_frozen(Path(__file__).resolve().parents[2] / "data" / f"frozen_{a.bench}.json")
                [:a.prompts]]
-    print(f"PROMPTS {len(prompts)} from frozen_math500 (same set the engine runs)")
+    print(f"PROMPTS {len(prompts)} from frozen_{a.bench} (same set the engine runs)")
     ctxs = frozen_contexts(tok, target, prompts, a.ar_len)
     print(f"CONTEXTS {len(ctxs)} generated, first len={len(ctxs[0])}")
 
