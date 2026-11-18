@@ -57,8 +57,8 @@ than A0 (259.1 vs 301.4 tok/s) and its tau drops from 5.64 to 4.91 (-13%). Short
 the verify block trades acceptance for round time, and it is a bad trade below c=8.
 
 **F5. On this backend the truncation arm and the block-width arm are the same
-configuration.** At 32 prompts, A1 (draft 16, verify 9) is tau 4.90 / 3363.7 tok/s and A3
-(block 8, verify 9) is tau 4.86 / 3370.4: **0.2% apart in throughput**. At 64 prompts
+configuration.** At 32 prompts, A1 (block 9, verify 9) is tau 4.90 / 3363.7 tok/s and A3
+(block 8, verify 8) is tau 4.86 / 3370.4: **0.2% apart in throughput**. At 64 prompts
 the same pair reads 4.86 / 3183.2 against 4.85 / 3065.9 (3.8% apart). `decide.py`
 scores H4 (A1/A3 >= 1.10) at **0.998**, i.e. no difference. SGLang's **Source confirmation (installed 0.5.23,
 `srt/arg_groups/speculative_hook.py::_handle_dflash`):** `speculative_dflash_block_size` is
@@ -137,6 +137,12 @@ What survives for the report: "at serving batch, DFlash's verify block is the bi
 cost, and halving it recovers 1.32x over DFlash and 2.22x over autoregressive decoding
 at a measured tau of 5.00 with bit-identical outputs". What does not survive:
 "truncation dominates block-width control", which needs a patched draft worker to test.
+**Label correction (2026-11-19).** Earlier revisions of this section called A1 "draft 16, verify 9".
+It was not: `speculative_num_draft_tokens=9` sets the drafter's block to 9 as well
+(`dflash_worker_v2.py:511-523` calls `set_block_size(9)`), and the same applies to A3 at 8. Every
+A1/A3 number in this file is block-k/verify-k, k equal. The "draft wide, verify narrow" cell has
+never been run; it is registered as H4-VLC in `docs/EXPERIMENTS.md` and needs the standalone
+instrument, because no public flag can express it.
 
 ## What this does and does not license
 
