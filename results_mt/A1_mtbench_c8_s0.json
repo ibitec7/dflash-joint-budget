@@ -1,0 +1,16 @@
+{
+  "arm": "A1",
+  "benchmark": "mtbench",
+  "concurrency": 8,
+  "seed": 0,
+  "draft_width": 16,
+  "verify_columns": 9,
+  "prompts": 32,
+  "tau": 3.7243,
+  "tok_per_s": 938.49,
+  "ar_tok_per_s": 685.38,
+  "ms_per_round_p50": 16.5957,
+  "ms_per_round_p95": 16.8191,
+  "exact_match_ar": 0.34375,
+  "graph_recaptures": 0
+}

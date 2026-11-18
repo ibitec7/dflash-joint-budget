@@ -1,0 +1,99 @@
+{
+ "rows": [
+  {
+   "prompt": 0,
+   "ctx_len": 246,
+   "block": 16,
+   "accepted": 1,
+   "drafts_matched": 0,
+   "agree": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "prompt": 1,
+   "ctx_len": 241,
+   "block": 16,
+   "accepted": 1,
+   "drafts_matched": 0,
+   "agree": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ]
+  }
+ ],
+ "tau": {
+  "b16_k1": 1.0,
+  "b16_k2": 1.0,
+  "b16_k3": 1.0,
+  "b16_k4": 1.0,
+  "b16_k5": 1.0,
+  "b16_k6": 1.0,
+  "b16_k7": 1.0,
+  "b16_k8": 1.0,
+  "b16_k9": 1.0,
+  "b16_k10": 1.0,
+  "b16_k11": 1.0,
+  "b16_k12": 1.0,
+  "b16_k13": 1.0,
+  "b16_k14": 1.0,
+  "b16_k15": 1.0,
+  "b16_k16": 1.0
+ },
+ "timings": [
+  {
+   "prompt": 0,
+   "block": 16,
+   "draft_s": 0.006212801999936346,
+   "verify_s": 0.03956546700101171,
+   "columns": 16
+  },
+  {
+   "prompt": 1,
+   "block": 16,
+   "draft_s": 0.006894202000694349,
+   "verify_s": 0.039624786000786116,
+   "columns": 16
+  }
+ ],
+ "config": {
+  "block_size": 16,
+  "layers": [
+   1,
+   9,
+   17,
+   25,
+   33
+  ],
+  "mask": 151669,
+  "prompts": 2,
+  "ar_len": 128
+ }
+}
