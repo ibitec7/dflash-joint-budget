@@ -400,10 +400,20 @@ def selftest() -> None:
 
 
 def main() -> None:
+    global WIDE, NARROW, K_STAR
     parser = argparse.ArgumentParser(description="VLC table, paired contrast, cost model")
     parser.add_argument("path", nargs="?", type=Path, default=DEFAULT_PATH)
     parser.add_argument("--selftest", action="store_true")
+    parser.add_argument("--wide", type=int, default=None, help="drafter block, treatment arm")
+    parser.add_argument("--narrow", type=int, default=None, help="drafter block, control arm")
+    parser.add_argument("--k", type=int, default=None, help="verify columns both arms pay for")
     args = parser.parse_args()
+    if args.wide is not None:
+        WIDE = args.wide
+    if args.narrow is not None:
+        NARROW = args.narrow
+    if args.k is not None:
+        K_STAR = args.k
     if args.selftest:
         selftest()
         return
