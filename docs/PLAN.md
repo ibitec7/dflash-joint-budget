@@ -74,29 +74,26 @@ Everything else (cost model, analysis, figures, writing) runs on the laptop and 
 
 ## 6. Projected gains
 
-From `analysis/cost_model.py`, which is anchored on the paper's two measured points (v(1)=1.471, v(32)=2.761 AR-step equivalents) and swept over the one unknown, ρ = the share of a batch-1 verification pass that is pure target-weight read.
+From `analysis/cost_model.py`, anchored on the paper's two measured points (v(1)=1.471, v(32)=2.761 AR-step equivalents). Two parameters are not identified by the paper:
 
-| Arm | ρ=0.9 (mostly floor) | ρ=0.7 | ρ=0.5 | ρ=0.3 (compute-rich) |
-|---|---|---|---|---|
-| A1 truncation, c=1 | +5.1% | +17.3% | +32.8% | +52.9% |
-| A1 truncation, c=8 | +26.1% | +37.6% | +51.5% | +68.5% |
-| A1 truncation, c=32 | +36.1% | +47.0% | +59.8% | +75.0% |
-| A3 width 8, c=1 | −33.5% | −26.8% | −18.5% | −8.1% |
-| A3 width 8, c=32 | −16.8% | −11.1% | −4.7% | +2.8% |
+- **ρ**, the share of a batch-1 verification pass that is pure target-weight read (column-independent floor).
+- **w_tail**, the share of blocks whose acceptance exceeds the truncation cap. Ignoring it overstates every gain, because truncation clips that tail. At w_tail = 0.10, capping at 9 columns costs 0.80 τ (8.01 → 7.21).
 
-**Calibration.** The model gives +5.1% to +52.9% at c=1 for the truncation arm; LibraSpec measures **+15.6%** for this mechanism on Qwen3-8B. The model is therefore optimistic by roughly 2× at the measured point, and the band should be halved:
+**ρ is fitted, not assumed.** Setting the model's c=1 prediction equal to LibraSpec's measured +15.6% over DFlash identifies ρ = 0.50 at w_tail = 0.10. One published measurement, one unknown, so the projection is a point estimate with a stated sensitivity band rather than a free parameter:
 
-| Realistic expectation | c=1 | c=8 | c=32 |
-|---|---|---|---|
-| A1 truncation | +2 to +9% | +13 to +19% | **+18 to +24%** |
-| A3 width 8 | −17 to −4% | −11 to −8% | −8 to +1% |
+| Arm | c=1 | c=4 | c=8 | c=16 | c=32 |
+|---|---|---|---|---|---|
+| A1 truncate to 9 columns | +15.6% | +25.5% | +29.3% | +32.4% | **+35.1%** |
+| A3 block width 8 | −18.4% | −11.4% | −8.7% | −6.5% | **−4.6%** |
 
-Read these as: **the method is worth 15–25% at serving batch and nothing at batch 1**, and the width knob ranges from useless to harmful. If the measurement lands outside that band, the cost model's split parameter is wrong and the report must say which direction.
+Sensitivity: the fit moves to ρ = 0.69 at w_tail = 0 (c=32: +40.1%), and to ρ = 0.20 at w_tail = 0.25 (c=32: +26.1%, with block-8 reaching +6.8%). The block-8 arm is positive only in that corner, where ρ is implausibly low and the clipped tail implausibly large.
+
+Read these as: **the method is worth 25–35% at serving batch, roughly 15% at batch 1, and the width knob is neutral to harmful everywhere the fit is plausible.**
 
 Two model results that shape the story:
 
-- **The optimal length does not move with load** (n\* = 8 at every c, for every ρ): the τ cap binds before the cost curve bends. The finding is therefore about the *size* of the benefit growing with load, not about a rule that must retune itself. That is a weaker but more honest claim than "regime-aware adaptation is needed", and it is what the model says.
-- **The width arm is dominated at every operating point except ρ=0.3 at c=32.** That is the ablation's value: it converts the paper's own future-work sentence into a quantified mistake.
+- **The optimal cap is not identified by the model.** Under the fitted parameters it sits at 7 columns (τ 7.00, +49.8% at c=32) rather than 9 (+35.0%); with a coarser tail model it moves to 9. An earlier version of this plan claimed the optimum was regime-invariant, and that was a tautology: `τ(L) = min(τ_max, L+1)` forces the optimum onto the cap by construction. The A2 sweep must measure `τ(L)` directly, and the report may not state where the cap belongs until it does.
+- **The width arm is dominated wherever the fit is plausible** (−18% at c=1 to −5% at c=32). That is the ablation's value: it converts the paper's own future-work sentence into a quantified mistake.
 
 ## 7. Risks and kill criteria
 

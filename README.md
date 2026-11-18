@@ -18,15 +18,18 @@ The improvement is therefore a **verify-length controller**: draft the full bloc
 - GPU experiments: **not started.** The local GPU is a 4 GB RTX 3050 and cannot host the 8B target.
 - Projected gains are **upper bounds**, calibrated against the one published measurement of this mechanism (LibraSpec: +15.6% over DFlash on Qwen3-8B at concurrency 1).
 
-## Projected results (from the cost model, calibrated ~2× optimistic)
+## Projected results
+
+The model has two free parameters: ρ (share of a batch-1 verification pass that is pure target-weight read) and w_tail (share of blocks whose acceptance exceeds the truncation cap). ρ is fitted to the one published measurement of this mechanism, LibraSpec's +15.6% over DFlash at concurrency 1, which gives ρ = 0.50 at w_tail = 0.10.
 
 | Arm | c=1 | c=8 | c=32 |
 |---|---|---|---|
-| Verify truncation (the method) | +5 to +17% | +26 to +38% | +36 to +47% |
-| After calibration (÷2, from the LibraSpec anchor) | **+2 to +9%** | **+13 to +19%** | **+18 to +24%** |
-| Block width 8 (the ablation) | −8 to −27% | −16 to −22% | −5 to −17% |
+| Verify truncation to 9 columns (the method) | **+15.6%** | **+29.3%** | **+35.1%** |
+| Block width 8 (the ablation) | −18.4% | −8.7% | −4.6% |
 
-Raw model at ρ = 0.9 (mostly memory floor): truncation +5.1% / +26.1% / +36.1%; at ρ = 0.3: +52.9% / +68.5% / +75.0%. Width arm at ρ = 0.7: −26.8% / −16.0% / −11.1%.
+Fitted at c=1 by construction, so the two informative cells are c=8 and c=32. Sensitivity: at w_tail = 0.25 and ρ = 0.20 the block-8 arm reaches +6.8% and the truncation arm falls to +26.1% at c=32. The block-8 arm turns positive only in that corner.
+
+The single measurement that decides everything is ρ. If verification turns out to be nearly all weight-read (ρ → 1), truncation saves almost nothing at any concurrency and the project ships as a negative result. `analysis/cost_model.py --fit` reproduces the table.
 
 ## Layout
 
