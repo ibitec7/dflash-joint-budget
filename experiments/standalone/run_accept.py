@@ -115,7 +115,13 @@ def reference_loop(draft, target, embed, lid, mask, blk: int, ids: torch.Tensor,
         start += acc + 1
         pkv_t.crop(start)
         th = torch.cat([vo.hidden_states[i + 1] for i in lid], dim=-1)[:, :acc + 1, :]
-    return out[:, :start].clone(), rounds
+    # A round commits up to `blk` tokens, so the loop can overshoot `end` by up to blk-1. The
+    # checkpoint's spec_generate stops exactly at the budget (measured: ctx+max_new, not one
+    # more), so clamp the sequence and subtract the overshoot from the final round's count.
+    stop = min(start, end)
+    if start > end and rounds:
+        rounds[-1] -= start - end
+    return out[:, :stop].clone(), rounds
 
 
 def check_reference(draft, target, embed, lid, mask, tok, prompts, max_new: int, blk: int):
