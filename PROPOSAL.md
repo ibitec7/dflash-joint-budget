@@ -30,12 +30,12 @@ DFlash replaces the sequential head with a **block diffusion drafter**: 5 Transf
 | | EAGLE-3 | DFlash |
 |---|---|---|
 | Drafter | 1 layer, autoregressive | 5 layers, block diffusion |
-| Draft passes per round | 7 | **1** |
+| Draft depth per round | 6 to 8 (tree depth, EAGLE-3 p.12); DFlash runs its EAGLE-3 baseline at 7 steps (DFlash p.6) | **1 pass** |
 | Draft cost | grows with lookahead, `d·t_step` | roughly flat in block width, `t_parallel` |
 | Target conditioning | features as input | features injected into K/V of every draft layer |
-| τ / speedup (Qwen3-8B, c=1) | 4.40 / 2.34× | **8.01 / 5.1×** (paper average 4.86× vs 2.96×) |
+| τ / speedup (Qwen3-8B, c=1) | 3.40 / 2.02× (DFlash Table 1, EAGLE-3 at 60 tokens); AdaFlash measures 4.40 / 2.34× for the same baseline | **8.01 / 5.1×** (DFlash Table 3, SGLang) |
 
-The structural reason DFlash wins is not that diffusion is smarter. It is that **one wide pass is cheaper than seven narrow ones**, so the same acceptance can be bought with far less drafting compute. That is a genuine architectural advantage and we do not dispute it.
+The structural reason DFlash wins is not that diffusion is smarter. It is that **one wide pass is cheaper than several narrow ones**, so the same acceptance can be bought with less drafting compute. The magnitude is disputed in C2 below, because DFlash's drafter is also 5 to 8 times deeper than the head it is compared against. The direction of the advantage is not disputed.
 
 ## 3. Three critiques
 
@@ -43,9 +43,9 @@ All three come from DFlash's own tables.
 
 **C1. The headline number is a batch-1 number.** At concurrency 1 DFlash reaches 5.1×; at concurrency 32 it reaches 2.8×, with τ unchanged at 8.01. That is **45.1% of its speedup lost to load**, and it is invisible in the abstract. Serving systems do not run at batch 1.
 
-**C2. The EAGLE-3 comparison confounds parallelism with capacity.** DFlash's efficiency argument prices an autoregressive drafter at γ sequential steps, but its own EAGLE-3 baseline runs 7 steps for 10 to 60 tokens, and the DFlash drafter has 5 to 8 layers against EAGLE-3's single layer. The paper's Table 6 contains a compute-matched 3-layer drafter that it never compares against a 1-layer head, so "parallel beats sequential" and "bigger drafter beats smaller drafter" are not separated.
+**C2. The EAGLE-3 comparison confounds parallelism with capacity, and the confound is smaller than it first looks.** DFlash's efficiency argument prices an autoregressive drafter at γ sequential steps, but its own EAGLE-3 baseline runs 7 steps for 10 to 60 tokens, and the DFlash drafter has 5 to 8 layers against EAGLE-3's single layer. Their own Table 6 ablates capacity at fixed parallelism (3, 5 and 8 layers at 4.69×, 4.71× and 4.64× on MATH-500), so capacity alone barely moves the number. What is never done is crossing capacity with drafter type: EAGLE-3 at 5 layers appears only in Table 9, a different experiment. So the honest form of the critique is narrow: "parallel beats sequential" is demonstrated, "one layer beats many" is not tested, and the headline multiplier depends on which EAGLE-3 configuration is chosen (2.02× at 60 tokens, higher at 10).
 
-**C3. The authors' own future work picks the expensive knob.** DFlash closes by proposing adaptive block size. Shrinking the block to 8 costs **2.92 accepted tokens** (τ 8.01 → 5.09), because the block bounds what can be accepted. Truncating how much of the drafted block gets **verified**, at the same column count, costs at most about one token: τ 8.00 if acceptance rarely exceeds nine tokens, τ 7.21 under the tail we fit from the published calibration. Both reduce the target's work by the same amount. One of them throws away acceptance to get there.
+**C3. The authors' own future work picks the expensive knob.** DFlash closes by proposing adaptive block size. Shrinking the block to 8 costs **2.92 accepted tokens** (τ 8.01 → 5.09: two anchors from two tables, Table 3 average and Table 8's 8-layer MATH-500 ablation, not one measurement of one model). Truncating how much of the drafted block gets **verified**, at the same column count, costs at most about one token: τ 8.00 if acceptance rarely exceeds nine tokens, τ 7.21 under the tail we fit from the published calibration. Both reduce the target's work by the same amount. One of them throws away acceptance to get there.
 
 ## 4. What we propose
 
@@ -62,13 +62,15 @@ These are genuinely separable, because the target pass costs one dense forward o
 
 **The claim we test.** Under load, the two knobs are not equivalent: VLC keeps acceptance and cuts verification, while W cuts verification and acceptance together. If that is true, the paper's stated future work is dominated, and the right knob is verify length.
 
+**What is already published, stated up front.** The marginal rule is LibraSpec's, training-free, and it has been run on DFlash. AdaFlash already truncates the draft before verification at concurrency, using a trained head rather than a rule. Neither has a block-width arm. Our claim is therefore a two-arm ablation at matched column count, not a new controller, and `docs/RELATED.md` records the page for each of those concessions.
+
 ## 5. Why this matters
 
 **Narrowly:** a serving operator reading DFlash's abstract buys 5.1× and gets 2.8×. Knowing which knob to turn at batch 32 is worth more than any drafter-side trick, because the drafter is only about 6% of a round at batch 1 and less at batch 32. The verification pass is 90%+ of the cost and it is the only term with real headroom.
 
-**Broadly:** the fast-drafter literature reports acceptance and calls it speed. Acceptance is measured at batch 1 in almost every paper in this family, and at higher load the same methods lose half their advantage (DFlash 5.1× → 2.8×, an iterative refiner 6.0× → 2.8×, a tree drafter 3.14× → 0.84×). A method that reports τ alone cannot distinguish a real efficiency gain from one that evaporates under serving. Our report makes that gap explicit, measures it on one model with a controlled grid, and shows that the fix is a budget decision rather than a better drafter.
+**Broadly:** the collapse under load is not a secret in this literature, it is a reported side effect that nobody repairs. XPress publishes 6.0× at batch 4 falling to 2.8× at batch 32; AdaFlash publishes 0.76× at concurrency 128, slower than plain autoregressive decoding; a block-diffusion tree drafter measured by a third party goes 3.14× to 0.84× from batch 1 to 64. Each paper reports the number and moves on. The one training-free controller that targets the verification side, LibraSpec, is evaluated single-stream. So the open question is not "does it collapse" but "does the cheap fix still work where the collapse happens", and that is measurable on one model with a controlled grid.
 
-If the effect holds, the same budget argument applies to every block-diffusion drafter, not just DFlash.
+If it holds, the same argument applies to every block-diffusion drafter, because they all share the structure that makes it work: one wide drafter pass feeding one dense verification pass.
 
 ## 6. What results we will provide
 
@@ -93,7 +95,7 @@ Deliverables from the runs: 51 measurements over `c ∈ {1,4,8,16,32}` on MATH-5
 
 Per the guidelines: paper summary, critique, implemented improvement, in-class presentation, signed report with per-member contributions. The 13-day plan, GPU budget (about 10 A100-hours, roughly $15 to $25), and role split are in `docs/PLAN.md`; the experiment register is `docs/EXPERIMENTS.md`; the decision script is `scripts/decide.py`.
 
-**Limits we will state in the report:** one target model family, greedy decoding in the headline cells, one serving backend, and a single-hardware regime map that may shift on other GPUs. Verify-length selection is not our invention: LibraSpec publishes the marginal rule, training-free, on DFlash. Our contribution is the head-to-head against the block-width knob and the measurement above batch 1, which neither paper reports. We will say that in the introduction rather than let a marker say it for us.
+**Limits we will state in the report:** one target model family, greedy decoding in the headline cells, one serving backend, and a single-hardware regime map that may shift on other GPUs. Two of our three critiques rest on anchors taken from two different tables (τ 8.01 from Table 3, τ 5.09 from Table 8's 8-layer ablation), which the report will label as two anchors rather than one measurement. And verify-length selection is not our invention: LibraSpec publishes the marginal rule, training-free, on DFlash, and AdaFlash truncates the draft before verification at concurrency with a trained head. What is left is the block-width arm, at matched column count, above concurrency 1, which `docs/RELATED.md` shows none of the five related papers runs. We will say that in the introduction rather than let a marker say it for us.
 
 ## 8. References
 

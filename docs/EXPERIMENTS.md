@@ -31,7 +31,7 @@ afterwards; if a threshold is wrong, the report says it was wrong and reports th
 | **H4** | Verify length dominates draft width | the project's novel claim | `tok/s(A1) ≥ 1.10 · tok/s(A3)` at c=32 | the two knobs are equivalent; the dominance claim is withdrawn and the report presents them as equal-cost alternatives |
 | **H5** | The method costs nothing at batch 1 | deployability | `tok/s(A1)/tok/s(A0) ≥ 0.98` at c=1 | per-round selection overhead is real; report it as the price of the method |
 | **H6** | Output is unchanged | losslessness | `exact_match_ar(A1) ≥ 0.99` | the implementation changes model behaviour; the run is invalid and the bug is reported, not the result |
-| **H7** | The controller beats the best fixed length | whether adaptivity is worth anything | `tok/s(A4) ≥ 1.05 · max_L tok/s(fixed L)` at c=32 | a fixed length is enough; the adaptive rule is reported as unnecessary complexity |
+| **H7** | The controller beats the best fixed length | whether adaptivity is worth anything | `tok/s(A4) ≥ 1.05 · max_L tok/s(fixed L)` at c=32 | a fixed length is enough; the adaptive rule is reported as unnecessary complexity. **Conditional:** A4 needs E0 to confirm the backend exposes a per-request verify length. If it does not, H7 is N/A, not failed, and the report says the adaptive arm was unimplementable on this backend |
 
 ## 3. Decision matrix
 

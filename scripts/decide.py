@@ -198,7 +198,13 @@ def main() -> int:
         selftest()
         return 0
 
-    runs = [r for r in load(Path(args.results)) if r["benchmark"] == args.benchmark]
+    results_dir = Path(args.results)
+    if (results_dir / "SYNTHETIC_DATA_DO_NOT_USE").exists():
+        print(f"refusing {results_dir}: it carries SYNTHETIC_DATA_DO_NOT_USE "
+              "(dry-run plumbing records, not measurements)")
+        return 3
+
+    runs = [r for r in load(results_dir) if r["benchmark"] == args.benchmark]
     if not runs:
         print(f"no results for {args.benchmark} in {args.results}")
         return 1

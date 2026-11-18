@@ -19,8 +19,8 @@ This is a critique-first project. The improvement is small in mechanism and larg
 | # | Finding | Anchor |
 |---|---|---|
 | C1 | **The headline is a batch-1 number.** 5.1× at c=1, 2.8× at c=32, τ fixed at 8.01. Everything that degrades is in the verification term. 45.1% of the speedup is lost to load | Table 3, p.7 |
-| C2 | **Parallelism is confounded with capacity.** A 5–8 layer drafter is compared against a 1-layer EAGLE-3 head; eq.(2) prices an AR drafter at γ·t_step while the paper's own EAGLE-3 runs 7 steps for 10–60 tokens (EAGLE-3 at 60 tokens scores 0.6× at c=32, which the "up to 2.5×" claim omits) | p.3 eq.2, p.8 Table 5 |
-| C3 | **The declared future work is the wrong knob.** Adaptive block size spends acceptance it does not have to: b=8 gives τ 5.09 (a 2.92-token loss). Truncating verification to the same column count gives τ 8.00 (0.01-token loss) for approximately the same compute saving | p.9 future work; Table 8 τ at b=8 |
+| C2 | **Parallelism is confounded with capacity, narrowly.** A 5–8 layer drafter is compared against a 1-layer EAGLE-3 head; eq.(2) prices an AR drafter at γ·t_step while the paper's own EAGLE-3 runs 7 steps for 10–60 tokens. Their Table 6 ablates capacity at fixed drafter type (3/5/8 layers, 4.69/4.71/4.64×), so capacity alone barely moves it; the untested cell is capacity crossed with drafter type (EAGLE-3 at 5 layers appears only in Table 9) | p.3 eq.2, p.8 Table 5/6, p.9 Table 9 |
+| C3 | **The declared future work is the wrong knob.** Adaptive block size spends acceptance it does not have to: b=8 gives τ 5.09 (a 2.92-token loss). Truncating verification to the same column count gives τ 7.21 to 8.00 (0.01 to 0.80-token loss) for approximately the same compute saving. The two anchors come from two tables (Table 3 average, Table 8's 8-layer ablation) | p.9 future work; Table 3, Table 8 |
 
 C3 is the finding that motivates the implementation, and it is the one a grader can check against the plan's arithmetic.
 

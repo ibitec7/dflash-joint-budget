@@ -35,11 +35,20 @@ The single measurement that decides everything is ρ. If verification turns out 
 ## Layout
 
 ```
+PROPOSAL.md                what we claim, why, and what evidence will settle it
 analysis/cost_model.py     cost model, anchors, projection tables (has --selftest)
+scripts/run_grid.py        the grid: arms x concurrency x benchmark x seed -> results/
 scripts/decide.py          applies the pre-registered rules to measured results
-tests/                     cost-model algebra + the decision rules themselves
+scripts/prompts.py         frozen prompt sets (data/frozen_*.json), no-network fallback
+scripts/analyze.py         markdown table + gain-vs-concurrency figure
+src/arms.py                arm definitions and the marginal verify-length selector
+src/serve.py               backend adapter (sglang/vllm/transformers) with a dry-run mode
+src/metrics.py             the results record schema and validator
+tests/                     model algebra, decision rules, grid glue, prompts, analysis
 docs/PLAN.md               full plan: experiments, GPU budget, projections, roles
 docs/EXPERIMENTS.md        hypothesis register H1-H7, thresholds, decision matrix
+docs/RELATED.md            page-anchored positioning against five related papers
+docs/SERVING.md            serving runbook and fallback ladder
 results/                   measurement JSON, one file per (arm, concurrency, benchmark, seed)
 figures/                   the frontier figure for the report and the talk
 ```

@@ -3,8 +3,8 @@ __pycache__/
 *.pyc
 .ruff_cache/
 .pytest_cache/
-results/
 figures/*.pdf
 figures/*.png
 *.log
 .env
+results/*_dryrun/
