@@ -40,6 +40,7 @@ def test_selftest_runs():
         cwd=Path(__file__).resolve().parents[1],
         capture_output=True,
         text=True,
+        check=False,
     )
     assert out.returncode == 0, out.stderr
     assert "selftest ok" in out.stdout

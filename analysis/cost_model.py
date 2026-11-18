@@ -114,10 +114,10 @@ def main() -> None:
             print(f"{rho:>5} {c:>4} {base:>8.2f} {narrow:>7.2f} {(narrow / base - 1) * 100:>7.1f}")
         print()
 
+    lo = (speedup(1, best_length(1, 0.9)[0], 0.9) / S_C1 - 1) * 100
+    hi = (speedup(1, best_length(1, 0.3)[0], 0.3) / S_C1 - 1) * 100
     print("Calibration: LibraSpec measures +15.6% over DFlash (4.43x -> 5.12x, Qwen3-8B).")
-    print("Model at c=1 gives +%.1f%% (rho=0.9) to +%.1f%% (rho=0.3) for the length arm,"
-          % ((speedup(1, *[best_length(1, 0.9)[0], 0.9]) / S_C1 - 1) * 100,
-             (speedup(1, *[best_length(1, 0.3)[0], 0.3]) / S_C1 - 1) * 100))
+    print(f"Model at c=1 gives +{lo:.1f}% (rho=0.9) to +{hi:.1f}% (rho=0.3) for the length arm,")
     print("so the model is optimistic by roughly 2x on the measured point. Treat every")
     print("number above as an upper bound, not a prediction.")
 
