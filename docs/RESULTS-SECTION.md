@@ -68,16 +68,23 @@ Only drafter width differs. Verify columns are 9 in both arms; the tau ceiling i
 
 The cell cannot be expressed on SGLang 0.5.23: `speculative_num_draft_tokens` sets the drafter's block and the verified length at once, and different values are a hard `ValueError` (RESULTS.md F5). It is measured instead by `experiments/standalone/run_accept.py`, gated on reproducing the checkpoint's own `spec_generate` token for token; until that gate prints `REFERENCE_OK`, no acceptance number counts.
 
-| quantity | where it will be read from |
-|---|---|
-| instrument gate | `TO BE MEASURED` — `REFERENCE_OK` from `run_accept.py --check-ref` |
-| `tau_9(16)` | `TO BE MEASURED` — `accept.json` `tau["b16_k9"]` |
-| `tau_9(8)` | `TO BE MEASURED` — `accept.json` rows at `block=8`, `mean(min(accepted, 9))` |
-| tau ratio, paired on (prompt, ctx_len) + 95% CI | `TO BE MEASURED` — `vlc.py` output [2] |
-| per-prompt wins / ties / losses | `TO BE MEASURED` — `vlc.py` output [2] |
-| cost factor `round(8,9)/round(16,9)` | `TO BE MEASURED` — `vlc.py` output [3] |
-| predicted tok/s ratio | `TO BE MEASURED` — `vlc.py` output [3] |
-| verdict | `TO BE MEASURED` — `vlc.py` output [4] |
+| quantity | measured (math500, 32 prompts, 7079 rounds) | source |
+|---|---|---|
+| instrument gate | `REFERENCE_OK mode=raw`, reference tau 3.73, token-identical to `spec_generate` on both check prompts | `run_accept.py --check-ref` |
+| `tau_9(16)` | **4.409** | `accept_math500.json` `tau["b16_k9"]` |
+| `tau_9(9)` | **4.381** | `tau["b9_k9"]` |
+| tau ratio, paired on (prompt, ctx_len) + 95% CI | **1.018 [0.989, 1.049]** | `vlc.py` [2] |
+| per-prompt wins / ties / losses | **20 / 0 / 12**, sign test p = 0.215 | `vlc.py` [2] |
+| cost factor `round(9,9)/round(16,9)` | 1.005 (45.08 / 45.29 ms medians) | `vlc.py` [3] |
+| predicted tok/s ratio | 1.023 | `vlc.py` [3] |
+| verdict | **NOT SUPPORTED** — both bars fail | `vlc.py` [4] |
+
+The tau table behind those two cells is the finding (RESULTS.md F15): up to 8 columns a 16-slot
+block and an 8-slot block accept within 2% of each other (4.198 vs 4.192 at k=8), and the width
+advantage appears only above 8 columns (5.278 against 4.192, +25.9%, at k=16). Truncating at 9
+therefore gives up 16.5% of the wide block's committed tokens and buys 1.018x over the narrow
+control, inside its own CI. The estimate is a second benchmark pending (`mtbench`, same protocol):
+it replicates or it does not, and it cannot change the math500 verdict.
 
 Nothing here is estimated or carried over from the block-k arms; those sit inside 5% of each other and that is a warning about the prior, not a substitute for the measurement (NOVELTY.md §3).
 
