@@ -151,6 +151,33 @@ Consequence for the VLC cell: report `tau_9(16)/tau_9(8)` and the predicted tok/
 in-process cost model as the primary quantities, and use engine tok/s only as corroboration of the
 model on the expressible arm.
 
+## F12. The paired ratio replicates to four significant figures while absolutes move 10%
+
+math500, 32 prompts, c=32, default kernels, two seeds, plus the deterministic pass for reference:
+
+| pass | A5 (AR) tok/s | A0 tok/s | A0 xAR | A1 tok/s | A1 xAR | **A1/A0** | A0 tau | A1 tau |
+|---|---|---|---|---|---|---|---|---|
+| det, s0 | 993.6 | 1674.3 | 1.685 | 2206.7 | 2.221 | **1.318** | 5.861 | 5.001 |
+| default, s1 | 2460.8 | 2234.5 | 0.908 | 3149.0 | 1.284 | **1.409** | 5.510 | 4.850 |
+| default, s2 | 2461.1 | 2461.8 | 1.002 | 3467.9 | 1.409 | **1.409** | 5.730 | 4.872 |
+
+- **The ratio is the measurement.** A1/A0 is 1.409 at both default-kernel seeds, identical to
+  four significant figures, while the absolute tokens/s for both arms move ~10% between those
+  same seeds (A0 2234.5 -> 2461.8, A1 3149.0 -> 3467.9). Whatever moves the absolute number
+  moves both arms together and cancels in the ratio. Absolute throughput is a property of the
+  pass; the ratio is a property of the arms.
+- **AR is not a stable denominator across seeds either** (2460.8 vs 2461.1, but A0 lands on both
+  sides of parity with it: 0.908x at s1, 1.002x at s2). A claim phrased as "beats autoregressive
+  decoding" is therefore a claim with a 10% denominator wobble; a claim phrased as a paired ratio
+  between two speculative arms is not.
+- **tau is not portable across kernel modes and not perfectly stable across seeds** (A0 5.861 det,
+  5.510 s1, 5.730 s2). Report tau per pass, never averaged across modes.
+- **Deterministic mode costs 2.5x absolute throughput and 7% of the ratio** (1.318 vs 1.409). Any
+  bit-exactness claim and any throughput claim must come from the same pass.
+
+Consequence: the VLC cell's headline is a paired ratio with a CI, and its corroboration on the
+expressible arm is the sequence 1.318 / 1.409 / 1.409, not a single absolute number.
+
 ## Verdict from the pre-registered rules
 
 `uv run python scripts/decide.py --results results_det --benchmark math500 --adaptive-na`
