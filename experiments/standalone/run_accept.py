@@ -33,12 +33,25 @@ DRAFT_ID = "z-lab/Qwen3-8B-DFlash-b16"
 TARGET_ID = "Qwen/Qwen3-8B"
 
 
-def frozen_contexts(tok, target, prompts: list[str], ar_len: int) -> list[list[int]]:
+def encode(tok, prompt: str, mode: str) -> torch.Tensor:
+    """Tokenise a prompt the way a given backend would.
+
+    The sglang backend hands raw prompt strings to Engine.generate, so `raw` reproduces what the
+    engine saw; `chat` applies the tokenizer template with a generation prompt, which is what the
+    single-engine backend does. The two conventions put the model in different regimes (Qwen3's
+    template opens a thinking block), and a drafter trained without them accepts differently, so
+    the convention is a variable, not a detail.
+    """
+    text = prompt if mode == "raw" else tok.apply_chat_template(
+        [{"role": "user", "content": prompt}], tokenize=False, add_generation_prompt=True)
+    return tok(text, return_tensors="pt").input_ids.cuda()
+
+
+def frozen_contexts(tok, target, prompts: list[str], ar_len: int, mode: str) -> list[list[int]]:
     """Greedy AR continuation per prompt, batch 1 so the tokens are a fixed shared prefix."""
     out = []
     for p in prompts:
-        ids = tok(tok.apply_chat_template([{"role": "user", "content": p}], tokenize=False,
-                                          add_generation_prompt=True), return_tensors="pt").input_ids.cuda()
+        ids = encode(tok, p, mode)
         with torch.no_grad():
             gen = target.generate(ids, max_new_tokens=ar_len, do_sample=False,
                                   pad_token_id=tok.eos_token_id)
@@ -124,12 +137,18 @@ def reference_loop(draft, target, embed, lid, mask, blk: int, ids: torch.Tensor,
     return out[:, :stop].clone(), rounds
 
 
-def check_reference(draft, target, embed, lid, mask, tok, prompts, max_new: int, blk: int):
-    """Diff my loop against the checkpoint's own spec_generate; no tolerance, token for token."""
+def check_reference(draft, target, embed, lid, mask, tok, prompts, max_new: int, blk: int,
+                    mode: str = "raw"):
+    """Diff my loop against the checkpoint's own spec_generate; no tolerance, token for token.
+
+    Two ways this can pass while measuring nothing, both now refused:
+    - a mismatched token stream (REFERENCE_MISMATCH), and
+    - a reference that accepts no drafts at all (REFERENCE_DEGENERATE): when tau is 1 every round,
+      both loops are plain greedy decoding and agree whatever the drafter does. A gate that only
+      compares tokens therefore validates an instrument that cannot accept.
+    """
     for i, p in enumerate(prompts):
-        ids = tok(tok.apply_chat_template([{"role": "user", "content": p}], tokenize=False,
-                                          add_generation_prompt=True),
-                  return_tensors="pt").input_ids.cuda()
+        ids = encode(tok, p, mode)
         with torch.no_grad():
             ref = draft.spec_generate(target=target, input_ids=ids, max_new_tokens=max_new,
                                       stop_token_ids=None, temperature=0.0)
@@ -141,12 +160,18 @@ def check_reference(draft, target, embed, lid, mask, tok, prompts, max_new: int,
             print(f"  REF  {ref[0, ids.shape[1]:].tolist()[:16]}")
             print(f"  MINE {mine[0, ids.shape[1]:].tolist()[:16]}")
             raise SystemExit("REFERENCE_MISMATCH: instrument not validated, refusing to measure")
-    print("REFERENCE_OK")
+        if sum(rounds) / len(rounds) < 2.0:
+            print(f"  the reference accepts {sum(rounds) / len(rounds):.2f} tokens per round: at this "
+                  "level both loops are plain greedy decoding and agree without the drafter working")
+            raise SystemExit("REFERENCE_DEGENERATE: prompt convention or wiring is wrong, "
+                             "refusing to measure")
+    print(f"REFERENCE_OK mode={mode}")
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--bench", default="math500")
+    ap.add_argument("--prompt-mode", default="raw", choices=("raw", "chat"))
     ap.add_argument("--prompts", type=int, default=32)
     ap.add_argument("--ar-len", type=int, default=128, help="frozen AR prefix length it generates")
     ap.add_argument("--blocks", default="16,12,9,8")
@@ -168,12 +193,12 @@ def main() -> None:
                load_frozen(Path(__file__).resolve().parents[2] / "data" / f"frozen_{a.bench}.json")
                [:a.prompts]]
     print(f"PROMPTS {len(prompts)} from frozen_{a.bench} (same set the engine runs)")
-    ctxs = frozen_contexts(tok, target, prompts, a.ar_len)
+    ctxs = frozen_contexts(tok, target, prompts, a.ar_len, a.prompt_mode)
     print(f"CONTEXTS {len(ctxs)} generated, first len={len(ctxs[0])}")
 
     if a.check_ref:
         check_reference(draft, target, embed, lid, mask, tok, prompts[:a.check_ref],
-                        a.max_new, int(draft.block_size))
+                        a.max_new, int(draft.block_size), mode=a.prompt_mode)
 
     blocks = [int(b) for b in a.blocks.split(",")]
     rows, timings = [], []
